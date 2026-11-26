@@ -44,3 +44,14 @@ No se declara que el mod compila hasta que GitHub Actions termine con éxito la 
 ## Documentación incluida dentro del ZIP
 
 Al extraer el paquete se encuentran la guía en español, el estado del proyecto, la matriz de cobertura, los informes de validación, los mapas de animación/sonido y el plan de implementación restante.
+
+
+## Primera compilación real
+
+El pipeline ya ha completado correctamente una compilación de NeoForge con Java 21 y Gradle 8.12. También se ha comprobado que el JAR contiene `META-INF/neoforge.mods.toml` y declara las dependencias requeridas.
+
+- [Ejecución de compilación satisfactoria](https://github.com/malg11lopez-art/med_fac/actions/runs/45898040349)
+- [Informe de compilación](BUILD_VALIDATION_v0_9.md)
+- [Acciones y última prueba de arranque de servidor](https://github.com/malg11lopez-art/med_fac/actions)
+
+La compilación no sustituye las pruebas de cliente gráfico, mundo real y multijugador. El workflow añade un smoke test del servidor dedicado para avanzar en esa validación.
