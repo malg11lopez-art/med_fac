@@ -1,66 +1,59 @@
-# MEDIEVAL FACTIONS
+# MEDIEVAL FACTIONS — v0.9.1-alpha
 
-Repositorio de integración y compilación de **MEDIEVAL FACTIONS v0.9.1-alpha** para Minecraft 1.21.1 / NeoForge.
+Repositorio de fuentes y compilación para **Minecraft Java 1.21.1**, **NeoForge 21.1.267**, **Java 21** y **GeckoLib 4.9.4**.
 
-## Estado de importación
+El proyecto se conserva en `MEDIEVAL_FACTIONS_v0_9_0_alpha.zip`. GitHub Actions verifica el archivo, lo extrae, aplica los parches de compatibilidad y calidad mantenidos en `ci/`, compila el mod y ejecuta pruebas de servidor y cliente headless.
 
-La conexión con GitHub está activa y el pipeline de compilación ya está configurado. El código del mod todavía no se encuentra en este repositorio: debe añadirse el archivo fuente completo:
+## Última compilación confirmada
 
-`MEDIEVAL_FACTIONS_v0_9_0_alpha.zip`
+<badge color="success">CI #41 — SUCCESS</badge>
 
-El archivo debe subirse a la **raíz** del repositorio. No hace falta descomprimirlo localmente: el workflow lo verifica y extrae automáticamente en GitHub Actions.
+- Commit: `03354464a9f1f189a579c3ba1ab6ab09765e0f92`
+- JAR: `medieval_factions-0.9.1-alpha.jar`
+- SHA-256: `a832620ac521654e29ba70849047eb08da5ed7bf4e1e2466e68cf7f2210046e2`
+- Tamaño: 1.626.534 bytes
+- [Ver GitHub Actions #41 y descargar los artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45908567151)
 
-## Cómo importar el proyecto
+## Qué se ha comprobado
 
-1. Descarga el ZIP v0.9.1-alpha desde la conversación de ChatGPT.
-2. Abre [Subir archivos al repositorio](https://github.com/malg11lopez-art/med_fac/upload/main).
-3. Arrastra `MEDIEVAL_FACTIONS_v0_9_0_alpha.zip` a la zona de carga y confirma el commit en `main`.
-4. Abre la pestaña [Actions](https://github.com/malg11lopez-art/med_fac/actions) para ver la compilación.
+- Integridad y estructura del ZIP de fuentes.
+- Java 21 y Gradle 8.12.
+- Validador de recursos JSON, modelos, texturas y animaciones.
+- 75 SoundEvents registrados y 75 archivos OGG presentes; los 75 aparecen en la previsualización de operador.
+- 271 aserciones de dominio y pruebas de persistencia con stubs.
+- `gradle clean test build`.
+- NeoForge GameTests para registros de objetos, entidades, bloques y sonidos.
+- Descriptor del mod y versión exacta `0.9.1-alpha` dentro del JAR.
+- Arranque de servidor dedicado.
+- Arranque de cliente headless, inicialización del motor de audio y recarga del ResourceManager.
+- Registro de la capa de skin para los modelos vanilla `default` y `slim`, con 86 skins disponibles.
+- El pipeline guarda también un artefacto ZIP con el código fuente ya parcheado.
 
-## Qué ejecuta CI
+## Estado real de sonido y skins
 
-- Java 21 (Temurin).
-- Gradle 8.12.
-- Comprobación de integridad y estructura del ZIP.
-- Validador de recursos.
-- Pruebas de dominio.
-- Smoke test de persistencia NBT con stubs.
-- `gradle --no-daemon clean test build`.
-- Publicación del JAR como artefacto descargable solo si todas las comprobaciones pasan.
+**Sonido:** 75/75 eventos están registrados y se pueden reproducir mediante `/mf advanced sound preview <sound_id>`. La auditoría manual del código y keyframes detectó 43/75 con disparadores de gameplay o animación; 32 siguen sin disparador natural. La comprobación automática de cobertura se está corrigiendo para excluir el catálogo de previsualización y los GameTests, que no cuentan como uso en partida.
 
-Workflow: `.github/workflows/build.yml`.
+**Skins:** hay 86 texturas locales. La tecla `N` cambia la skin del jugador local y guarda la selección en `config/medieval_factions_skin.txt`. La capa se registra en los dos modelos de jugador vanilla. Esta selección todavía no se sincroniza con otros jugadores y no se aplica automáticamente a residentes NPC.
 
-## Criterio de aceptación
+## Qué significa el resultado
 
-No se declara que el mod compila hasta que GitHub Actions termine con éxito la compilación NeoForge. Un JAR compilado tampoco equivale, por sí solo, a una certificación de funcionamiento dentro de Minecraft: después deben ejecutarse pruebas de cliente, servidor, GameTests, persistencia y multijugador.
+La compilación y los smoke tests demuestran que el mod puede compilarse, iniciar un servidor NeoForge, iniciar el cliente headless y cargar los recursos comprobados. No equivalen a una prueba manual completa de una partida, ni certifican la calidad auditiva humana: el cliente CI utiliza Xvfb y el driver de audio nulo.
 
-## Requisitos del proyecto
+## Pendiente antes de considerarlo completo
 
-- Minecraft Java 1.21.1
-- NeoForge 21.1.267
-- Java 21
-- GeckoLib 4.9.4
+- Sincronización multijugador y aplicación de skins a otros jugadores/NPC.
+- GUI gráfica completa para facciones, ciudades, economía, personajes, talentos y órdenes.
+- IA social y laboral autónoma de habitantes y tareas físicas de campo.
+- Generación integral de ciudades, más blueprints y edificios funcionales.
+- Ejércitos visibles, formaciones físicas, asedios y conquista jugable.
+- Carros y escoltas como entidades, mercados autónomos y economía conectada.
+- Vuelo autónomo y ciclo vital completo de dragones.
+- Familia/medicina con interacciones y animaciones completas.
+- Jefes físicos sincronizados con sus encuentros y expediciones robustas en chunks/dimensiones.
+- Pruebas de persistencia real de todos los buckets, multijugador con dos clientes y profiling con poblaciones altas.
 
-## Documentación incluida dentro del ZIP
+## Compilar
 
-Al extraer el paquete se encuentran la guía en español, el estado del proyecto, la matriz de cobertura, los informes de validación, los mapas de animación/sonido y el plan de implementación restante.
+Abre [Actions](https://github.com/malg11lopez-art/med_fac/actions) y ejecuta el workflow `Build MEDIEVAL FACTIONS` con `workflow_dispatch`, o consulta la [última ejecución](https://github.com/malg11lopez-art/med_fac/actions).
 
-
-## Primera compilación real
-
-El pipeline ya ha completado correctamente una compilación de NeoForge con Java 21 y Gradle 8.12. También se ha comprobado que el JAR contiene `META-INF/neoforge.mods.toml` y declara las dependencias requeridas.
-
-- [Ejecución de compilación satisfactoria](https://github.com/malg11lopez-art/med_fac/actions/runs/45898040349)
-- [Informe de compilación](BUILD_VALIDATION_v0_9.md)
-- [Acciones y última prueba de arranque de servidor](https://github.com/malg11lopez-art/med_fac/actions)
-
-La compilación no sustituye las pruebas de cliente gráfico, mundo real y multijugador. El workflow añade un smoke test del servidor dedicado para avanzar en esa validación.
-
-
-## Estado de validación de v0.9.1-alpha
-
-La [ejecución #37](https://github.com/malg11lopez-art/med_fac/actions/runs/45906231056) terminó correctamente: compilación Gradle, GameTests, descriptor del JAR, arranque de servidor dedicado y carga de cliente headless. El cliente registró la capa cosmética para los modelos `default` y `slim`, con 86 skins locales.
-
-El pipeline fuerza la versión de metadatos `0.9.1-alpha` y comprueba que los 75 SoundEvents están disponibles en `/mf advanced sound preview <sound_id>`. 43 tienen un disparador natural en clips/acciones; los otros 32 se pueden previsualizar, pero no todos tienen todavía un disparador automático.
-
-El cliente headless usa OpenAL nulo: valida inicialización y carga de recursos, no la calidad auditiva humana. La elección de skin es local, no se sincroniza a otros clientes ni se aplica a residentes NPC.
+La versión es **alpha**. No se debe tratar como una release final hasta superar las limitaciones de la lista anterior y las puertas de calidad documentadas en el proyecto.

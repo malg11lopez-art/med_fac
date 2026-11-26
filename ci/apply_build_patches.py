@@ -291,4 +291,47 @@ if windmill_model.exists():
         raise SystemExit("Missing windmill source texture for block atlas")
     print("Patched windmill block model atlas reference")
 
+
+# Correct the sound-trigger audit: the operator preview catalogue and GameTests are not gameplay triggers.
+validator_file = project / "tools/validate_assets.py"
+if not validator_file.is_file():
+    raise SystemExit("Missing tools/validate_assets.py for sound-trigger audit")
+validator_text = validator_file.read_text(encoding="utf-8")
+audit_marker = "EXCLUDE_PREVIEW_AND_GAMETEST_SOUND_REFERENCES_V1"
+if audit_marker not in validator_text:
+    old_audit = """java_sound_ids = set()
+for java_file in java_root.rglob("*.java"):
+    java_code = java_file.read_text(encoding="utf-8")
+    java_sound_ids.update(name.lower() for name in re.findall(r"MFSounds\\.([A-Z0-9_]+)", java_code) if name != "SOUND_EVENTS")
+connected_sound_ids = keyframe_sound_ids | java_sound_ids
+"""
+    new_audit = """# EXCLUDE_PREVIEW_AND_GAMETEST_SOUND_REFERENCES_V1
+# A SoundEvent listed in the operator audition catalogue or referenced only by
+# a GameTest is not a natural gameplay trigger. Exclude those files from coverage.
+java_sound_ids = set()
+for java_file in java_root.rglob("*.java"):
+    relative_parts = java_file.relative_to(java_root).parts
+    if java_file.name == "MFSoundPreview.java" or "gametest" in relative_parts:
+        continue
+    java_code = java_file.read_text(encoding="utf-8")
+    java_sound_ids.update(name.lower() for name in re.findall(r"MFSounds\\.([A-Z0-9_]+)", java_code) if name != "SOUND_EVENTS")
+connected_sound_ids = keyframe_sound_ids | java_sound_ids
+"""
+    if validator_text.count(old_audit) != 1:
+        raise SystemExit("Could not locate the exact SoundEvent audit block; refusing to apply an ambiguous patch.")
+    validator_text = validator_text.replace(old_audit, new_audit, 1)
+    validator_text = validator_text.replace(
+        'print(f"Sound coverage: {len(connected_sound_ids & set(sounds))}/{len(sounds)} events referenced by animation keyframes or gameplay code")\n'
+        'print(f"SoundEvents registered but not yet triggered by current clips/actions: {len(unused_sound_ids)}")',
+        'print(f"Gameplay sound-trigger coverage: {len(connected_sound_ids & set(sounds))}/{len(sounds)} events referenced by animation keyframes or runtime gameplay code")\n'
+        'print(f"Registered sounds without a natural gameplay trigger: {len(unused_sound_ids)}")\n'
+        'if unused_sound_ids:\n'
+        '    print("Preview-only / untriggered SoundEvents: " + ", ".join(sorted(unused_sound_ids)))',
+        1
+    )
+    validator_file.write_text(validator_text, encoding="utf-8")
+    print("Corrected sound-trigger audit: preview catalogue and GameTests excluded.")
+else:
+    print("Sound-trigger audit already excludes operator preview and GameTests.")
+
 print("All CI compile and packaging patches applied successfully.")
