@@ -72,7 +72,7 @@ build_file = project / "build.gradle"
 build_text = build_file.read_text(encoding="utf-8")
 bad_exclusion = "sourceSets.main.resources.exclude('META-INF/neoforge.mods.toml')"
 if bad_exclusion in build_text:
-    build_file.write_text(build_text.replace(bad_exclusion + "\\n", "", 1), encoding="utf-8")
+    build_file.write_text(build_text.replace(bad_exclusion + "\n", "", 1), encoding="utf-8")
     print("Patched build.gradle: keep generated META-INF/neoforge.mods.toml in the JAR")
 elif "sourceSets.main.resources.exclude('META-INF/neoforge.mods.toml')" not in build_text:
     print("build.gradle descriptor exclusion already absent")
