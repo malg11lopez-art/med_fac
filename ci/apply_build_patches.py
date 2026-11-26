@@ -54,14 +54,19 @@ def replace_once(relative: str, old: str, new: str) -> None:
 # task runner handles process lifecycle itself.
 build_file = project / "build.gradle"
 build_text = build_file.read_text(encoding="utf-8")
-force_exit_block = "            // Prevent Gradle's daemon from being force-exited by the GameTest server.\\n            setForceExit false\\n"
-if force_exit_block in build_text:
-    build_file.write_text(build_text.replace(force_exit_block, "", 1), encoding="utf-8")
+if "setForceExit false" in build_text:
+    cleaned_lines = [
+        line for line in build_text.splitlines()
+        if "setForceExit false" not in line
+        and "Prevent Gradle's daemon from being force-exited" not in line
+    ]
+    build_file.write_text("\n".join(cleaned_lines) + "\n", encoding="utf-8")
+    build_text = build_file.read_text(encoding="utf-8")
+    if "setForceExit false" in build_text:
+        raise SystemExit("Could not remove unsupported setForceExit DSL from build.gradle")
     print("Patched build.gradle: removed unsupported ModDevGradle setForceExit DSL")
-elif "setForceExit false" not in build_text:
-    print("build.gradle: no unsupported setForceExit DSL")
 else:
-    raise SystemExit("Unexpected setForceExit configuration in build.gradle")
+    print("build.gradle: unsupported setForceExit DSL already absent")
 
 # Minecraft 1.21.1 exposes Mob save/load hooks as public methods.
 replace_once("entity/MFAnimatedMob.java",
