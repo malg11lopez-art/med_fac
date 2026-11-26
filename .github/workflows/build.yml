@@ -9,6 +9,7 @@ on:
       - 'ci/smoke_server_start.sh'
       - 'ci/smoke_client_start.sh'
       - 'ci/feature_patch/**'
+      - 'ci/quality_patch/**'
       - 'ci/patches/**'
       - '.github/workflows/build.yml'
   workflow_dispatch:
@@ -68,6 +69,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Install FFmpeg for complete OGG validation
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Install resource-validator dependency
         run: python -m pip install --disable-pip-version-check pillow
