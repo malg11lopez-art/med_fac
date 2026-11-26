@@ -1,12 +1,39 @@
 #!/usr/bin/env python3
 """Apply verified NeoForge 1.21.1 / GeckoLib compile fixes to the v0.9 source tree."""
 from pathlib import Path
+import base64
+import gzip
+import subprocess
 import sys
 
 if len(sys.argv) != 2:
     raise SystemExit("usage: apply_build_patches.py PROJECT_DIR")
 project = Path(sys.argv[1]).resolve()
 root = project / "src/main/java/com/medievalfactions"
+
+# Apply the reviewed source/resource enhancement patch before compatibility checks.
+# The payload is split into text chunks because the GitHub contents API is text-oriented.
+patch_dir = Path(__file__).resolve().parent / "patches"
+patch_parts = sorted(patch_dir.glob("part*.b64")) if patch_dir.exists() else []
+if patch_parts:
+    payload = "".join(part.read_text(encoding="ascii").strip() for part in patch_parts)
+    try:
+        patch_bytes = gzip.decompress(base64.b64decode(payload, validate=True))
+    except Exception as exc:
+        raise SystemExit(f"Could not decode enhancement patch: {exc}")
+    result = subprocess.run(
+        ["patch", "--batch", "--forward", "-p1"],
+        cwd=project,
+        input=patch_bytes,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode("utf-8", errors="replace"))
+    if result.returncode != 0:
+        raise SystemExit(f"Enhancement patch failed with exit code {result.returncode}")
+    print(f"Applied source/resource enhancements ({len(patch_parts)} patch chunks).")
+else:
+    raise SystemExit("Missing ci/patches/part*.b64 enhancement patch payload.")
 
 
 def replace_once(relative: str, old: str, new: str) -> None:
