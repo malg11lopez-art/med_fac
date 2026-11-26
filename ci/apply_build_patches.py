@@ -5,7 +5,8 @@ import sys
 
 if len(sys.argv) != 2:
     raise SystemExit("usage: apply_build_patches.py PROJECT_DIR")
-root = Path(sys.argv[1]).resolve() / "src/main/java/com/medievalfactions"
+project = Path(sys.argv[1]).resolve()
+root = project / "src/main/java/com/medievalfactions"
 
 
 def replace_once(relative: str, old: str, new: str) -> None:
@@ -64,4 +65,18 @@ replace_once("data/MFAdvancedSavedData.java",
 replace_once("MedievalFactions.java", "import software.bernie.geckolib.GeckoLib;\n", "")
 replace_once("MedievalFactions.java", "        GeckoLib.initialize();\n", "")
 
-print("All CI compile patches applied successfully.")
+# The broad source-set exclusion also removed the generated NeoForge mod descriptor
+# from the final JAR. There is no unexpanded descriptor under src/main/resources,
+# so this exclusion is both unnecessary and harmful.
+build_file = project / "build.gradle"
+build_text = build_file.read_text(encoding="utf-8")
+bad_exclusion = "sourceSets.main.resources.exclude('META-INF/neoforge.mods.toml')"
+if bad_exclusion in build_text:
+    build_file.write_text(build_text.replace(bad_exclusion + "\\n", "", 1), encoding="utf-8")
+    print("Patched build.gradle: keep generated META-INF/neoforge.mods.toml in the JAR")
+elif "sourceSets.main.resources.exclude('META-INF/neoforge.mods.toml')" not in build_text:
+    print("build.gradle descriptor exclusion already absent")
+else:
+    raise SystemExit("Unexpected build.gradle descriptor configuration")
+
+print("All CI compile and packaging patches applied successfully.")
