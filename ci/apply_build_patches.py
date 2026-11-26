@@ -49,6 +49,40 @@ def replace_once(relative: str, old: str, new: str) -> None:
         raise SystemExit(f"Patch precondition failed for {relative}: expected one original or an already-patched file, found {count}")
 
 
+# Give every registry GameTest an actual structure template. In 1.21.1 the
+# GameTestHolder prefixes the class name, so "empty" resolves to
+# medieval_factions:mfregistrygametests.empty.
+test_source = root / "gametest/MFRegistryGameTests.java"
+test_text = test_source.read_text(encoding="utf-8")
+test_text = test_text.replace('template = "minecraft:empty"', 'template = "empty"')
+test_source.write_text(test_text, encoding="utf-8")
+
+# Write a minimal 1x1x1 all-air structure template (NBT DataVersion 3955).
+# This avoids depending on a vanilla "empty" structure that is not shipped
+# in the NeoForge 1.21.1 GameTest data.
+import gzip
+import struct
+
+def nbt_string(value: str) -> bytes:
+    encoded = value.encode("utf-8")
+    return struct.pack(">H", len(encoded)) + encoded
+
+def nbt_named(tag_type: int, name: str, payload: bytes) -> bytes:
+    return bytes([tag_type]) + nbt_string(name) + payload
+
+nbt = bytearray([10]) + nbt_string("")  # root compound
+nbt += nbt_named(3, "DataVersion", struct.pack(">i", 3955))
+nbt += nbt_named(9, "size", bytes([3]) + struct.pack(">i", 3) + struct.pack(">iii", 1, 1, 1))
+palette_compound = nbt_named(8, "Name", nbt_string("minecraft:air")) + bytes([0])
+nbt += nbt_named(9, "palette", bytes([10]) + struct.pack(">i", 1) + palette_compound)
+nbt += nbt_named(9, "blocks", bytes([10]) + struct.pack(">i", 0))
+nbt += nbt_named(9, "entities", bytes([10]) + struct.pack(">i", 0))
+nbt += bytes([0])  # root compound end
+structure_path = project / "src/main/resources/data/medieval_factions/structures/mfregistrygametests.empty.nbt"
+structure_path.parent.mkdir(parents=True, exist_ok=True)
+structure_path.write_bytes(gzip.compress(bytes(nbt), mtime=0))
+print(f"Generated GameTest template: {structure_path.relative_to(project)}")
+
 # ModDevGradle 2.0.148 RunModel does not expose NeoGradle's setForceExit DSL.
 # Keep the GameTest Server run, but remove that unsupported property; the plugin's
 # task runner handles process lifecycle itself.
