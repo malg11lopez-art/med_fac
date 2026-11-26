@@ -43,6 +43,41 @@ else:
     raise SystemExit("Source lacks v0.9.1 enhancements and no feature patch bundle is available.")
 
 
+# Apply the audited player-skin/audio-quality patch after the gameplay enhancement patch.
+# The marker is deliberately written by the patch into the validator so a partially
+# applied tree cannot be mistaken for a complete quality upgrade.
+quality_patch_dir = Path(__file__).resolve().parent / "quality_patch"
+quality_patch_parts = sorted(quality_patch_dir.glob("part*.b64")) if quality_patch_dir.exists() else []
+quality_validator = project / "tools/validate_assets.py"
+quality_skin_layer = root / "client/MFPlayerSkinLayer.java"
+quality_marker_present = (
+    quality_skin_layer.exists()
+    and quality_validator.exists()
+    and "FULL_AUDIO_META_VALIDATION_V1" in quality_validator.read_text(encoding="utf-8")
+)
+if quality_marker_present:
+    print("Player skin renderer and strict audio/resource checks already present; skipping quality patch.")
+elif quality_patch_parts:
+    quality_payload = "".join(part.read_text(encoding="ascii").strip() for part in quality_patch_parts)
+    try:
+        quality_patch_bytes = gzip.decompress(base64.b64decode(quality_payload, validate=True))
+    except Exception as exc:
+        raise SystemExit(f"Could not decode quality patch: {exc}")
+    quality_result = subprocess.run(
+        ["patch", "--batch", "--forward", "-p1"],
+        cwd=project,
+        input=quality_patch_bytes,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(quality_result.stdout.decode("utf-8", errors="replace"))
+    if quality_result.returncode != 0:
+        raise SystemExit(f"Resource/skin quality patch failed with exit code {quality_result.returncode}")
+    print(f"Applied player-skin/audio-quality patch ({len(quality_patch_parts)} chunks).")
+else:
+    raise SystemExit("Player-skin/audio-quality patch bundle is missing.")
+
+
 def replace_once(relative: str, old: str, new: str) -> None:
     path = root / relative
     source = path.read_text(encoding="utf-8")
