@@ -8,6 +8,7 @@ on:
       - 'ci/verify_mod_jar.sh'
       - 'ci/smoke_server_start.sh'
       - 'ci/smoke_client_start.sh'
+      - 'ci/feature_patch/**'
       - 'ci/patches/**'
       - '.github/workflows/build.yml'
   workflow_dispatch:
