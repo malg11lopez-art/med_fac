@@ -8,7 +8,7 @@ fi
 
 LOG_FILE="${RUNNER_TEMP:-/tmp}/medieval-factions-client-smoke.log"
 set +e
-timeout --signal=INT --kill-after=15s 180s xvfb-run -a gradle --no-daemon runClient > "$LOG_FILE" 2>&1
+ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 timeout --signal=INT --kill-after=15s 180s xvfb-run -a gradle --no-daemon runClient > "$LOG_FILE" 2>&1
 STATUS=$?
 set -e
 cat "$LOG_FILE"
@@ -22,7 +22,7 @@ if ! grep -Fq 'Reloading ResourceManager:' "$LOG_FILE"; then
   echo "::error::Minecraft client did not reload its resource manager (exit code $STATUS)."
   exit 1
 fi
-if grep -Eiq 'Failed to load (model|texture|sound)|Unable to load sound|Could not load texture|Animation file.*(missing|not found)' "$LOG_FILE"; then
+if grep -Eiq 'Failed to load (model|texture|sound)|Unable to load sound|Could not load texture|Missing textures in model medieval_factions:|Missing sound for event: medieval_factions:|Animation file.*(missing|not found)' "$LOG_FILE"; then
   echo "::error::Client reported a resource/animation/sound loading failure."
   exit 1
 fi
