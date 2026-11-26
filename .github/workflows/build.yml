@@ -33,7 +33,8 @@ jobs:
         id: archive
         shell: bash
         run: |
-          ARCHIVE="$(find . -maxdepth 1 -type f -name 'MEDIEVAL_FACTIONS_v0_9_*_alpha.zip' -printf '%f\\n' | sort -V | tail -n 1)"
+          ARCHIVE="$(find . -maxdepth 1 -type f -name 'MEDIEVAL_FACTIONS_v0_9_*_alpha.zip' -print | sort -V | tail -n 1)"
+          ARCHIVE="${ARCHIVE#./}"
           if [ -z "$ARCHIVE" ]; then
             echo "::error::No MEDIEVAL_FACTIONS_v0_9_*_alpha.zip source archive found in repository root."
             exit 1
