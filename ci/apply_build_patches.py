@@ -78,7 +78,7 @@ nbt += nbt_named(9, "palette", bytes([10]) + struct.pack(">i", 1) + palette_comp
 nbt += nbt_named(9, "blocks", bytes([10]) + struct.pack(">i", 0))
 nbt += nbt_named(9, "entities", bytes([10]) + struct.pack(">i", 0))
 nbt += bytes([0])  # root compound end
-structure_path = project / "src/main/resources/data/medieval_factions/structures/mfregistrygametests.empty.nbt"
+structure_path = project / "src/main/resources/data/medieval_factions/structure/mfregistrygametests.empty.nbt"
 structure_path.parent.mkdir(parents=True, exist_ok=True)
 structure_path.write_bytes(gzip.compress(bytes(nbt), mtime=0))
 print(f"Generated GameTest template: {structure_path.relative_to(project)}")
