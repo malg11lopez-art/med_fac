@@ -49,6 +49,20 @@ def replace_once(relative: str, old: str, new: str) -> None:
         raise SystemExit(f"Patch precondition failed for {relative}: expected one original or an already-patched file, found {count}")
 
 
+# ModDevGradle 2.0.148 RunModel does not expose NeoGradle's setForceExit DSL.
+# Keep the GameTest Server run, but remove that unsupported property; the plugin's
+# task runner handles process lifecycle itself.
+build_file = project / "build.gradle"
+build_text = build_file.read_text(encoding="utf-8")
+force_exit_block = "            // Prevent Gradle's daemon from being force-exited by the GameTest server.\\n            setForceExit false\\n"
+if force_exit_block in build_text:
+    build_file.write_text(build_text.replace(force_exit_block, "", 1), encoding="utf-8")
+    print("Patched build.gradle: removed unsupported ModDevGradle setForceExit DSL")
+elif "setForceExit false" not in build_text:
+    print("build.gradle: no unsupported setForceExit DSL")
+else:
+    raise SystemExit("Unexpected setForceExit configuration in build.gradle")
+
 # Minecraft 1.21.1 exposes Mob save/load hooks as public methods.
 replace_once("entity/MFAnimatedMob.java",
     "    protected void addAdditionalSaveData(CompoundTag tag) {",
