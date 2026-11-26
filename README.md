@@ -1,33 +1,46 @@
-# MEDIEVAL FACTIONS — importación pendiente
+# MEDIEVAL FACTIONS
 
-Este repositorio está preparado para alojar el proyecto MEDIEVAL FACTIONS.
+Repositorio de integración y compilación de **MEDIEVAL FACTIONS v0.9.0-alpha** para Minecraft 1.21.1 / NeoForge.
 
-## Estado al 26-11-2026
+## Estado de importación
 
-El repositorio se encuentra vacío (sin commits ni archivos). El código fuente de la versión v0.9.0-alpha se encuentra actualmente en un paquete ZIP generado en la sesión de trabajo, pero todavía no ha sido importado aquí.
+La conexión con GitHub está activa y el pipeline de compilación ya está configurado. El código del mod todavía no se encuentra en este repositorio: debe añadirse el archivo fuente completo:
 
-## Siguiente paso obligatorio
+`MEDIEVAL_FACTIONS_v0_9_0_alpha.zip`
 
-Subir el contenido completo del ZIP de MEDIEVAL FACTIONS v0.9.0-alpha a la raíz del repositorio, conservando:
-- `build.gradle` y configuración Gradle
-- `gradle.properties` y Gradle Wrapper si está disponible
-- `src/main/java`
-- `src/main/resources`
-- scripts de validación y pruebas
-- documentación y manifiestos
+El archivo debe subirse a la **raíz** del repositorio. No hace falta descomprimirlo localmente: el workflow lo verifica y extrae automáticamente en GitHub Actions.
 
-No se debe declarar una compilación satisfactoria hasta que GitHub Actions ejecute `clean test build` y publique un JAR verificable.
+## Cómo importar el proyecto
 
-## Puerta de calidad prevista
+1. Descarga el ZIP v0.9.0-alpha desde la conversación de ChatGPT.
+2. Abre [Subir archivos al repositorio](https://github.com/malg11lopez-art/med_fac/upload/main).
+3. Arrastra `MEDIEVAL_FACTIONS_v0_9_0_alpha.zip` a la zona de carga y confirma el commit en `main`.
+4. Abre la pestaña [Actions](https://github.com/malg11lopez-art/med_fac/actions) para ver la compilación.
 
-1. Java 21
-2. Wrapper Gradle fijado a una versión compatible con NeoForge ModDevGradle
-3. Validación de recursos
-4. Pruebas de dominio
-5. Pruebas de persistencia
-6. Compilación NeoForge
-7. Publicación del JAR solo si todos los pasos anteriores terminan correctamente
+## Qué ejecuta CI
 
-## Aviso
+- Java 21 (Temurin).
+- Gradle 8.12.
+- Comprobación de integridad y estructura del ZIP.
+- Validador de recursos.
+- Pruebas de dominio.
+- Smoke test de persistencia NBT con stubs.
+- `gradle --no-daemon clean test build`.
+- Publicación del JAR como artefacto descargable solo si todas las comprobaciones pasan.
 
-Este README no sustituye al código fuente ni acredita que el mod compile.
+Workflow: `.github/workflows/build.yml`.
+
+## Criterio de aceptación
+
+No se declara que el mod compila hasta que GitHub Actions termine con éxito la compilación NeoForge. Un JAR compilado tampoco equivale, por sí solo, a una certificación de funcionamiento dentro de Minecraft: después deben ejecutarse pruebas de cliente, servidor, GameTests, persistencia y multijugador.
+
+## Requisitos del proyecto
+
+- Minecraft Java 1.21.1
+- NeoForge 21.1.267
+- Java 21
+- GeckoLib 4.9.4
+
+## Documentación incluida dentro del ZIP
+
+Al extraer el paquete se encuentran la guía en español, el estado del proyecto, la matriz de cobertura, los informes de validación, los mapas de animación/sonido y el plan de implementación restante.
