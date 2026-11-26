@@ -16,11 +16,11 @@ for path in (sounds_file, preview_file, commands_file):
         raise SystemExit(f"Required sound-preview file is missing: {path}")
 
 registered = set(re.findall(
-    r"DeferredHolder<SoundEvent,\\s*SoundEvent>\\s+(\\w+)\\s*=\\s*SOUND_EVENTS\\.register\\(",
+    r"public static final DeferredHolder<SoundEvent, SoundEvent>\s+(\w+)\s*=",
     sounds_file.read_text(encoding="utf-8")
 ))
 preview = set(re.findall(
-    r'Map\\.entry\\("[a-z0-9_]+",\\s*MFSounds\\.(\\w+)\\)',
+    r'Map\.entry\("[a-z0-9_]+",\s*MFSounds\.(\w+)\)',
     preview_file.read_text(encoding="utf-8")
 ))
 command_text = commands_file.read_text(encoding="utf-8")
