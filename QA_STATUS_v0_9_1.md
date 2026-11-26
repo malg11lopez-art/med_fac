@@ -1,15 +1,15 @@
 # Informe de QA — MEDIEVAL FACTIONS 0.9.1-alpha
 
-Fecha de ejecución: 26-11-2026  
-Workflow: [Build MEDIEVAL FACTIONS #41](https://github.com/malg11lopez-art/med_fac/actions/runs/45908567151)  
-Commit: `03354464a9f1f189a579c3ba1ab6ab09765e0f92`  
+Fecha: 26-11-2026  
+Workflow: [Build MEDIEVAL FACTIONS #42](https://github.com/malg11lopez-art/med_fac/actions/runs/45908989072)  
+Commit: `947999c8b4737c9c535375a0ea0b9c6ce101951d`  
 Resultado: **SUCCESS**
 
 ## Artefacto verificado
 
 - Archivo: `medieval_factions-0.9.1-alpha.jar`
 - Tamaño: 1.626.534 bytes
-- SHA-256: `a832620ac521654e29ba70849047eb08da5ed7bf4e1e2466e68cf7f2210046e2`
+- SHA-256: `cfaeede92cff0a4507a2c554922863fcde96d07f343e24ce2e191ae031adec26`
 - Descriptor: `modId=medieval_factions`, `version=0.9.1-alpha`
 - Dependencias declaradas: NeoForge 21.1.267+, Minecraft 1.21.1, GeckoLib 4.9.4.
 
@@ -19,7 +19,7 @@ Resultado: **SUCCESS**
 |---|---|
 | ZIP de fuentes y extracción | PASS |
 | Parches de compatibilidad/calidad | PASS |
-| Validador de recursos | PASS |
+| Validador de recursos | PASS — 111 JSON, 14 rigs, 0 errores |
 | Catálogo de previsualización de sonido | 75/75 PASS |
 | Pruebas de dominio | 271 aserciones PASS |
 | SavedData stub smoke test | PASS, cobertura parcial |
@@ -34,14 +34,17 @@ Resultado: **SUCCESS**
 ## Inventario comprobado en el JAR
 
 - 75 definiciones SoundEvent y 75 archivos OGG; ninguna referencia de `sounds.json` apunta a un archivo ausente.
+- Los 75 OGG se decodifican como Vorbis mono a 44,1 kHz; ninguno está corrupto, y las duraciones van de 0,16 a 4 s.
 - 86 texturas de skin de jugador.
 - 9 bibliotecas JSON de animación GeckoLib.
 - 14 modelos geométricos Geo.
 - El descriptor empaquetado declara exactamente `0.9.1-alpha`.
 
-## Corrección importante de la auditoría de audio
+## Cobertura honesta de sonido
 
-El registro de previsualización contiene referencias a los 75 eventos, pero eso solo demuestra que un operador puede probarlos. No demuestra que todos se activen de forma natural durante el juego. La inspección separada de keyframes y código de acciones detectó **43/75** eventos conectados a animaciones o acciones; **32/75** todavía no tienen disparador natural. El siguiente cambio del pipeline excluirá explícitamente `MFSoundPreview.java` y los GameTests del cálculo de cobertura para evitar falsos positivos.
+El registro de previsualización contiene referencias a los 75 eventos, pero eso solo demuestra que un operador puede probarlos. No demuestra que todos se activen de forma natural durante el juego.
+
+La auditoría de CI se corrigió para excluir `MFSoundPreview.java` y los GameTests del cálculo. Resultado: **43/75** eventos conectados a keyframes o código de acciones de runtime; **32/75** registrados y previsualizables, pero sin disparador natural detectado. El validador enumera sus identificadores para poder priorizar su integración.
 
 ## Límites de lo probado
 
