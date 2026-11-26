@@ -6,6 +6,7 @@ on:
       - 'MEDIEVAL_FACTIONS_v0_9_0_alpha.zip'
       - 'ci/apply_build_patches.py'
       - 'ci/verify_mod_jar.sh'
+      - 'ci/smoke_server_start.sh'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -85,6 +86,10 @@ jobs:
       - name: Verify mod descriptor and JAR integrity
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: bash "$GITHUB_WORKSPACE/ci/verify_mod_jar.sh"
+
+      - name: Boot dedicated NeoForge server (smoke test)
+        working-directory: ${{ steps.archive.outputs.project_dir }}
+        run: bash "$GITHUB_WORKSPACE/ci/smoke_server_start.sh"
 
       - name: Upload compiled JAR
         uses: actions/upload-artifact@v4
