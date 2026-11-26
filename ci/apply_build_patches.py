@@ -167,4 +167,21 @@ elif "sourceSets.main.resources.exclude('META-INF/neoforge.mods.toml')" not in b
 else:
     raise SystemExit("Unexpected build.gradle descriptor configuration")
 
+# Fix the windmill block atlas reference. Entity textures are not stitched into
+# the block atlas; the inventory and world block model must reference textures/block.
+windmill_model = project / "src/main/resources/assets/medieval_factions/models/block/windmill.json"
+if windmill_model.exists():
+    model_text = windmill_model.read_text(encoding="utf-8")
+    model_text = model_text.replace("medieval_factions:entity/windmill", "medieval_factions:block/windmill")
+    windmill_model.write_text(model_text, encoding="utf-8")
+    windmill_entity_texture = project / "src/main/resources/assets/medieval_factions/textures/entity/windmill.png"
+    windmill_block_texture = project / "src/main/resources/assets/medieval_factions/textures/block/windmill.png"
+    if not windmill_block_texture.exists() and windmill_entity_texture.exists():
+        windmill_block_texture.parent.mkdir(parents=True, exist_ok=True)
+        windmill_block_texture.write_bytes(windmill_entity_texture.read_bytes())
+        print("Copied windmill texture into the block atlas")
+    elif not windmill_block_texture.exists():
+        raise SystemExit("Missing windmill source texture for block atlas")
+    print("Patched windmill block model atlas reference")
+
 print("All CI compile and packaging patches applied successfully.")
