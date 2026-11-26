@@ -7,6 +7,8 @@ on:
       - 'ci/apply_build_patches.py'
       - 'ci/verify_mod_jar.sh'
       - 'ci/smoke_server_start.sh'
+      - 'ci/smoke_client_start.sh'
+      - 'ci/patches/**'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -83,6 +85,10 @@ jobs:
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: gradle --no-daemon clean test build
 
+      - name: Run NeoForge GameTests
+        working-directory: ${{ steps.archive.outputs.project_dir }}
+        run: gradle --no-daemon runGameTestServer
+
       - name: Verify mod descriptor and JAR integrity
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: bash "$GITHUB_WORKSPACE/ci/verify_mod_jar.sh"
@@ -90,6 +96,10 @@ jobs:
       - name: Boot dedicated NeoForge server (smoke test)
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: bash "$GITHUB_WORKSPACE/ci/smoke_server_start.sh"
+
+      - name: Boot headless Minecraft client and reload assets
+        working-directory: ${{ steps.archive.outputs.project_dir }}
+        run: bash "$GITHUB_WORKSPACE/ci/smoke_client_start.sh"
 
       - name: Upload compiled JAR
         uses: actions/upload-artifact@v4
