@@ -3,7 +3,7 @@ name: Build MEDIEVAL FACTIONS
 on:
   push:
     paths:
-      - 'MEDIEVAL_FACTIONS_v0_9_0_alpha.zip'
+      - 'MEDIEVAL_FACTIONS_v0_9_*_alpha.zip'
       - 'ci/apply_build_patches.py'
       - 'ci/verify_mod_jar.sh'
       - 'ci/smoke_server_start.sh'
@@ -33,16 +33,17 @@ jobs:
         id: archive
         shell: bash
         run: |
-          ARCHIVE="MEDIEVAL_FACTIONS_v0_9_0_alpha.zip"
-          if [ ! -f "$ARCHIVE" ]; then
-            echo "::error::Missing $ARCHIVE. Upload the complete v0.9.0-alpha ZIP to the repository root."
+          ARCHIVE="$(find . -maxdepth 1 -type f -name 'MEDIEVAL_FACTIONS_v0_9_*_alpha.zip' -printf '%f\\n' | sort -V | tail -n 1)"
+          if [ -z "$ARCHIVE" ]; then
+            echo "::error::No MEDIEVAL_FACTIONS_v0_9_*_alpha.zip source archive found in repository root."
             exit 1
           fi
+          echo "Using source archive: $ARCHIVE"
           unzip -t "$ARCHIVE"
           mkdir -p build-input
           unzip -q "$ARCHIVE" -d build-input
-          PROJECT_DIR="build-input/MEDIEVAL_FACTIONS_v0_9_0_alpha"
-          if [ ! -f "$PROJECT_DIR/build.gradle" ] || [ ! -d "$PROJECT_DIR/src/main" ]; then
+          PROJECT_DIR="$(find build-input -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+          if [ -z "$PROJECT_DIR" ] || [ ! -f "$PROJECT_DIR/build.gradle" ] || [ ! -d "$PROJECT_DIR/src/main" ]; then
             echo "::error::The archive does not contain the expected Gradle project."
             exit 1
           fi
