@@ -15,7 +15,14 @@ root = project / "src/main/java/com/medievalfactions"
 # The payload is split into text chunks because the GitHub contents API is text-oriented.
 patch_dir = Path(__file__).resolve().parent / "feature_patch"
 patch_parts = sorted(patch_dir.glob("part*.b64")) if patch_dir.exists() else []
-if patch_parts:
+already_enhanced = (
+    (root / "item/MFPotionItem.java").exists()
+    and (project / "src/main/resources/assets/medieval_factions/animations/entities/guard_full.animation.json").exists()
+    and (root / "gametest/MFRegistryGameTests.java").exists()
+)
+if already_enhanced:
+    print("Source archive already contains v0.9.1 gameplay/resource enhancements; skipping binary patch.")
+elif patch_parts:
     payload = "".join(part.read_text(encoding="ascii").strip() for part in patch_parts)
     try:
         patch_bytes = gzip.decompress(base64.b64decode(payload, validate=True))
@@ -33,7 +40,7 @@ if patch_parts:
         raise SystemExit(f"Enhancement patch failed with exit code {result.returncode}")
     print(f"Applied source/resource enhancements ({len(patch_parts)} patch chunks).")
 else:
-    raise SystemExit("Missing ci/feature_patch/part*.b64 enhancement patch payload.")
+    raise SystemExit("Source lacks v0.9.1 enhancements and no feature patch bundle is available.")
 
 
 def replace_once(relative: str, old: str, new: str) -> None:
