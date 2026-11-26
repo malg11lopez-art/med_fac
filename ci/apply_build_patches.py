@@ -86,9 +86,7 @@ replace_once("entity/MFResidentEntity.java",
 replace_once("command/MFAdvancedCommands.java",
     "        long remainder = Math.max(0L, amount - existingCapacity);\n        return (remainder + item.getMaxStackSize() - 1L) / item.getMaxStackSize();",
     "        long remainder = Math.max(0L, amount - existingCapacity);\n        int defaultStackLimit = new ItemStack(item).getMaxStackSize();\n        return (remainder + defaultStackLimit - 1L) / defaultStackLimit;")
-replace_once("command/MFAdvancedCommands.java",
-    "    private static void addCoins(Inventory inventory, Item item, long amount) {\n        long remaining = amount;",
-    "    private static void addCoins(Inventory inventory, Item item, long amount) {\n        long remaining = amount;\n        int defaultStackLimit = new ItemStack(item).getMaxStackSize();")
+# addCoins already obtains its stack limit in the feature patch; do not inject it twice.
 replace_once("command/MFAdvancedCommands.java",
     "int added = (int) Math.min(remaining, item.getMaxStackSize());",
     "int added = (int) Math.min(remaining, defaultStackLimit);")
