@@ -7,25 +7,52 @@ if ! command -v xvfb-run >/dev/null 2>&1; then
 fi
 
 LOG_FILE="${RUNNER_TEMP:-/tmp}/medieval-factions-client-smoke.log"
-set +e
-ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 timeout --signal=INT --kill-after=15s 180s xvfb-run -a gradle --no-daemon runClient > "$LOG_FILE" 2>&1
-STATUS=$?
-set -e
+: > "$LOG_FILE"
+
+# Run Minecraft in an isolated process group. Stop immediately after the sound
+# engine, resource reload and both player renderer skin layers are confirmed.
+setsid env ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 xvfb-run -a gradle --no-daemon runClient > "$LOG_FILE" 2>&1 &
+CLIENT_PID=$!
+READY=0
+
+for _ in $(seq 1 150); do
+  if grep -Fq 'Sound engine started' "$LOG_FILE" \
+      && grep -Fq 'Reloading ResourceManager:' "$LOG_FILE" \
+      && grep -Fq 'Registered MEDIEVAL FACTIONS player skin layer on 2 renderer variants; 86 local skins available' "$LOG_FILE"; then
+    READY=1
+    break
+  fi
+  if ! kill -0 "$CLIENT_PID" 2>/dev/null; then
+    break
+  fi
+  sleep 1
+done
+
+stop_client() {
+  kill -INT -- "-$CLIENT_PID" 2>/dev/null || true
+  for _ in $(seq 1 10); do
+    if ! kill -0 -- "-$CLIENT_PID" 2>/dev/null; then
+      break
+    fi
+    sleep 1
+  done
+  kill -TERM -- "-$CLIENT_PID" 2>/dev/null || true
+  sleep 2
+  kill -KILL -- "-$CLIENT_PID" 2>/dev/null || true
+  wait "$CLIENT_PID" 2>/dev/null || true
+}
+
+if [ "$READY" -ne 1 ]; then
+  stop_client
+  cat "$LOG_FILE"
+  echo "::error::Minecraft client did not reach all required startup/resource/skin markers within 150 seconds."
+  exit 1
+fi
+
+echo "Minecraft client reached sound, resource reload and skin-renderer ready markers."
+stop_client
 cat "$LOG_FILE"
 
-# The client is intentionally interrupted after it has loaded the mod and client resources.
-if ! grep -Fq 'Sound engine started' "$LOG_FILE"; then
-  echo "::error::Minecraft client did not initialize its sound engine (exit code $STATUS)."
-  exit 1
-fi
-if ! grep -Fq 'Reloading ResourceManager:' "$LOG_FILE"; then
-  echo "::error::Minecraft client did not reload its resource manager (exit code $STATUS)."
-  exit 1
-fi
-if ! grep -Fq 'Registered MEDIEVAL FACTIONS player skin layer on 2 renderer variants; 86 local skins available' "$LOG_FILE"; then
-  echo "::error::Player skin layers were not registered for both vanilla player models."
-  exit 1
-fi
 if grep -Eiq 'geckolib.*(Failed to load|Unable to find animation|Could not parse animation|Invalid animation json)' "$LOG_FILE"; then
   echo "::error::GeckoLib reported an animation resource/clip loading failure."
   exit 1

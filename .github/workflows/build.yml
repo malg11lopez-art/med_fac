@@ -56,6 +56,14 @@ jobs:
       - name: Apply NeoForge 1.21.1 compile fixes
         run: python ci/apply_build_patches.py "${{ steps.archive.outputs.project_dir }}"
 
+      - name: Upload patched source snapshot for QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: medieval-factions-source-${{ github.sha }}
+          path: ${{ steps.archive.outputs.project_dir }}/
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
