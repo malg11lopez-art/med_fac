@@ -13,10 +13,13 @@ def replace_once(relative: str, old: str, new: str) -> None:
     path = root / relative
     source = path.read_text(encoding="utf-8")
     count = source.count(old)
-    if count != 1:
-        raise SystemExit(f"Patch precondition failed for {relative}: expected 1 match, found {count}")
-    path.write_text(source.replace(old, new, 1), encoding="utf-8")
-    print(f"Patched {relative}")
+    if count == 1:
+        path.write_text(source.replace(old, new, 1), encoding="utf-8")
+        print(f"Patched {relative}")
+    elif count == 0 and new in source:
+        print(f"Already patched {relative}")
+    else:
+        raise SystemExit(f"Patch precondition failed for {relative}: expected one original or an already-patched file, found {count}")
 
 
 # Minecraft 1.21.1 exposes Mob save/load hooks as public methods.
