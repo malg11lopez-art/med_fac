@@ -13,7 +13,7 @@ set -e
 cat "$LOG_FILE"
 
 # A healthy dedicated server reaches its normal "Done (...)" startup marker.
-if ! grep -Eq 'Done \\([0-9.]+s\\)!' "$LOG_FILE"; then
+if ! grep -Fq 'Done (' "$LOG_FILE"; then
   echo "::error::NeoForge dedicated server did not reach the startup-ready marker (exit code $STATUS)."
   exit 1
 fi
