@@ -1,6 +1,6 @@
 # MEDIEVAL FACTIONS
 
-Repositorio de integración y compilación de **MEDIEVAL FACTIONS v0.9.0-alpha** para Minecraft 1.21.1 / NeoForge.
+Repositorio de integración y compilación de **MEDIEVAL FACTIONS v0.9.1-alpha** para Minecraft 1.21.1 / NeoForge.
 
 ## Estado de importación
 
@@ -12,7 +12,7 @@ El archivo debe subirse a la **raíz** del repositorio. No hace falta descomprim
 
 ## Cómo importar el proyecto
 
-1. Descarga el ZIP v0.9.0-alpha desde la conversación de ChatGPT.
+1. Descarga el ZIP v0.9.1-alpha desde la conversación de ChatGPT.
 2. Abre [Subir archivos al repositorio](https://github.com/malg11lopez-art/med_fac/upload/main).
 3. Arrastra `MEDIEVAL_FACTIONS_v0_9_0_alpha.zip` a la zona de carga y confirma el commit en `main`.
 4. Abre la pestaña [Actions](https://github.com/malg11lopez-art/med_fac/actions) para ver la compilación.
@@ -55,3 +55,12 @@ El pipeline ya ha completado correctamente una compilación de NeoForge con Java
 - [Acciones y última prueba de arranque de servidor](https://github.com/malg11lopez-art/med_fac/actions)
 
 La compilación no sustituye las pruebas de cliente gráfico, mundo real y multijugador. El workflow añade un smoke test del servidor dedicado para avanzar en esa validación.
+
+
+## Estado de validación de v0.9.1-alpha
+
+La [ejecución #37](https://github.com/malg11lopez-art/med_fac/actions/runs/45906231056) terminó correctamente: compilación Gradle, GameTests, descriptor del JAR, arranque de servidor dedicado y carga de cliente headless. El cliente registró la capa cosmética para los modelos `default` y `slim`, con 86 skins locales.
+
+El pipeline fuerza la versión de metadatos `0.9.1-alpha` y comprueba que los 75 SoundEvents están disponibles en `/mf advanced sound preview <sound_id>`. 43 tienen un disparador natural en clips/acciones; los otros 32 se pueden previsualizar, pero no todos tienen todavía un disparador automático.
+
+El cliente headless usa OpenAL nulo: valida inicialización y carga de recursos, no la calidad auditiva humana. La elección de skin es local, no se sincroniza a otros clientes ni se aplica a residentes NPC.

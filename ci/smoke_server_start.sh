@@ -3,6 +3,14 @@ set -euo pipefail
 
 mkdir -p run/server
 printf 'eula=true\n' > run/server/eula.txt
+cat > run/server/server.properties <<'PROPERTIES'
+motd=MEDIEVAL FACTIONS dedicated server smoke test
+level-name=mf-ci-smoke
+server-port=25565
+max-players=1
+online-mode=false
+enable-command-block=true
+PROPERTIES
 LOG_FILE="${RUNNER_TEMP:-/tmp}/medieval-factions-server-smoke.log"
 
 set +e

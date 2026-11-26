@@ -11,6 +11,19 @@ if len(sys.argv) != 2:
 project = Path(sys.argv[1]).resolve()
 root = project / "src/main/java/com/medievalfactions"
 
+# Pin the mod metadata version to the actual v0.9.1-alpha source being built.
+properties_file = project / "gradle.properties"
+if not properties_file.is_file():
+    raise SystemExit("gradle.properties is missing")
+property_lines = properties_file.read_text(encoding="utf-8").splitlines()
+version_indices = [i for i, line in enumerate(property_lines) if line.strip().startswith("mod_version=")]
+if len(version_indices) != 1:
+    raise SystemExit(f"Expected one mod_version property, found {len(version_indices)}")
+if property_lines[version_indices[0]].strip() != "mod_version=0.9.1-alpha":
+    property_lines[version_indices[0]] = "mod_version=0.9.1-alpha"
+    properties_file.write_text("\n".join(property_lines) + "\n", encoding="utf-8")
+print("Pinned MEDIEVAL FACTIONS version to 0.9.1-alpha")
+
 # Apply the reviewed source/resource enhancement patch before compatibility checks.
 # The payload is split into text chunks because the GitHub contents API is text-oriented.
 patch_dir = Path(__file__).resolve().parent / "feature_patch"
@@ -77,6 +90,65 @@ elif quality_patch_parts:
 else:
     raise SystemExit("Player-skin/audio-quality patch bundle is missing.")
 
+
+
+# Add the operator-only preview command for all 75 registered SoundEvents.
+overlay_sound = Path(__file__).resolve().parent / "overlays/MFSoundPreview.java"
+preview_target = root / "registry/MFSoundPreview.java"
+if not overlay_sound.is_file():
+    raise SystemExit("Missing CI overlay: overlays/MFSoundPreview.java")
+preview_target.parent.mkdir(parents=True, exist_ok=True)
+if not preview_target.exists():
+    preview_target.write_text(overlay_sound.read_text(encoding="utf-8"), encoding="utf-8")
+    print("Added operator SoundEvent preview registry")
+
+advanced_commands = root / "command/MFAdvancedCommands.java"
+command_text = advanced_commands.read_text(encoding="utf-8")
+for import_line in (
+    "import net.minecraft.commands.SharedSuggestionProvider;",
+    "import net.minecraft.sounds.SoundSource;",
+    "import com.medievalfactions.registry.MFSoundPreview;",
+    "import java.util.Locale;",
+):
+    if import_line not in command_text:
+        package_line = "package com.medievalfactions.command;\n"
+        if package_line not in command_text:
+            raise SystemExit("Could not add imports to MFAdvancedCommands.java")
+        command_text = command_text.replace(package_line, package_line + "\n" + import_line + "\n", 1)
+if "root.then(soundCommands());" not in command_text:
+    registration = "        root.then(dungeonCommands());"
+    if command_text.count(registration) != 1:
+        raise SystemExit("Could not find advanced command registration point for sound preview")
+    command_text = command_text.replace(registration, registration + "\n        root.then(soundCommands());", 1)
+sound_method = """    /** Operator-only preview for all registered SoundEvents. */
+    private static LiteralArgumentBuilder<CommandSourceStack> soundCommands() {
+        var command = Commands.literal("sound").requires(source -> source.hasPermission(2));
+        command.then(Commands.literal("preview")
+                .then(Commands.argument("sound_id", StringArgumentType.word())
+                        .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MFSoundPreview.ids(), builder))
+                        .executes(ctx -> {
+                            ServerPlayer player = ctx.getSource().getPlayerOrException();
+                            String id = StringArgumentType.getString(ctx, "sound_id").toLowerCase(Locale.ROOT);
+                            var sound = MFSoundPreview.find(id);
+                            if (sound == null) {
+                                ctx.getSource().sendFailure(Component.literal("Sonido no registrado: " + id));
+                                return 0;
+                            }
+                            player.level().playSound(null, player.blockPosition(), sound.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Reproduciendo " + id), false);
+                            return 1;
+                        })));
+        return command;
+    }
+
+"""
+if "private static LiteralArgumentBuilder<CommandSourceStack> soundCommands()" not in command_text:
+    skill_anchor = "    private static LiteralArgumentBuilder<CommandSourceStack> skillCommands() {"
+    if command_text.count(skill_anchor) != 1:
+        raise SystemExit("Could not locate insertion point for sound preview command")
+    command_text = command_text.replace(skill_anchor, sound_method + skill_anchor, 1)
+advanced_commands.write_text(command_text, encoding="utf-8")
+print("Registered /mf advanced sound preview <sound_id>")
 
 def replace_once(relative: str, old: str, new: str) -> None:
     path = root / relative
