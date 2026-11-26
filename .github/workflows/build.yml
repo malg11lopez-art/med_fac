@@ -1,0 +1,88 @@
+name: Build MEDIEVAL FACTIONS
+
+on:
+  push:
+    paths:
+      - 'MEDIEVAL_FACTIONS_v0_9_0_alpha.zip'
+      - '.github/workflows/build.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: medieval-factions-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Validate and build mod
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify source archive
+        id: archive
+        shell: bash
+        run: |
+          ARCHIVE="MEDIEVAL_FACTIONS_v0_9_0_alpha.zip"
+          if [ ! -f "$ARCHIVE" ]; then
+            echo "::error::Missing $ARCHIVE. Upload the complete v0.9.0-alpha ZIP to the repository root."
+            exit 1
+          fi
+          unzip -t "$ARCHIVE"
+          mkdir -p build-input
+          unzip -q "$ARCHIVE" -d build-input
+          PROJECT_DIR="build-input/MEDIEVAL_FACTIONS_v0_9_0_alpha"
+          if [ ! -f "$PROJECT_DIR/build.gradle" ] || [ ! -d "$PROJECT_DIR/src/main" ]; then
+            echo "::error::The archive does not contain the expected Gradle project."
+            exit 1
+          fi
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install resource-validator dependency
+        run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Validate resources
+        working-directory: ${{ steps.archive.outputs.project_dir }}
+        run: python tools/validate_assets.py
+
+      - name: Run domain tests
+        working-directory: ${{ steps.archive.outputs.project_dir }}
+        run: bash tools/run_domain_tests.sh
+
+      - name: Run SavedData stub tests
+        working-directory: ${{ steps.archive.outputs.project_dir }}
+        run: bash tools/run_saveddata_stub_tests.sh
+
+      - name: Compile and test NeoForge mod
+        working-directory: ${{ steps.archive.outputs.project_dir }}
+        run: gradle --no-daemon clean test build
+
+      - name: Upload compiled JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: medieval-factions-jar-${{ github.sha }}
+          path: ${{ steps.archive.outputs.project_dir }}/build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 14
