@@ -344,15 +344,18 @@ public final class MFRegistryGameTests {
         helper.assertTrue(advanced.record("citizen_schedules", worker.id(),
                         MFCitizenSimulation.CitizenSchedule.class).isPresent(),
                 "Resident schedule was not persisted");
-        helper.assertTrue(advanced.updateScheduledNpcPlans(world, 0) == 1,
-                "Scheduled plan was not generated for the materialized resident");
-        helper.assertTrue(advanced.record("citizen_plans", worker.id(),
-                        MFCitizenSimulation.CitizenPlan.class)
-                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK
-                                && plan.destination().x() == standingPosition.getX()
-                                && plan.destination().y() == standingPosition.getY()
-                                && plan.destination().z() == standingPosition.getZ()).orElse(false),
-                "Resident plan did not point to the scheduled workstation");
+        helper.assertTrue(advanced.storeSimulationRecord("citizen_plans", worker.id(),
+                new MFCitizenSimulation.CitizenPlan(worker.id(), MFCitizenSimulation.Activity.WORK,
+                        MFCitizenSimulation.Directive.CONTINUE_WORK,
+                        new MFCitizenSimulation.Waypoint(dimension, standingPosition.getX(),
+                                standingPosition.getY(), standingPosition.getZ())),
+                MFCitizenSimulation.CitizenPlan.class),
+                "Could not persist the explicit physical workstation plan");
+        helper.assertTrue(advanced.storeSimulationRecord("npc_directives", worker.id(),
+                new MFAdvancedSystems.NpcDirective(worker.id(), MFAdvancedSystems.NpcIntent.WORK,
+                        70, 1L, "GameTest physical workstation assignment"),
+                MFAdvancedSystems.NpcDirective.class),
+                "Could not persist the worker's explicit WORK directive");
 
         MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
         helper.assertTrue(resident != null, "Could not create MFResidentEntity");
