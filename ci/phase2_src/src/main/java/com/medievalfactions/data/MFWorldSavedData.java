@@ -402,6 +402,7 @@ public final class MFWorldSavedData extends SavedData {
                 || fisher.profession() != Profession.FISHER || fisher.status() != CitizenStatus.ACTIVE
                 || fisher.ageStage() == AgeStage.BABY || fisher.ageStage() == AgeStage.CHILD
                 || amount <= 0L || amount > 8L || professionXp <= 0L || professionXp > 1_000L
+                || settlement.inventory().getOrDefault("minecraft:fishing_rod", 0L) < 1L
                 || !Set.of("minecraft:cod", "minecraft:salmon", "minecraft:tropical_fish",
                         "minecraft:pufferfish").contains(fishItemId)
                 || !settlement.canAccept(fishItemId, amount)) return false;
