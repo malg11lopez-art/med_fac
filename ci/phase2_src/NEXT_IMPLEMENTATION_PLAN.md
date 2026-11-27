@@ -34,15 +34,17 @@ Este plan prioriza dependencias reales y entregas comprobables. Una mecánica so
 - [x] Servidor dedicado alcanza marcador de arranque.
 - [x] Cliente headless inicializa sonido, recarga recursos y registra capa de skins.
 - [ ] Añadir Gradle Wrapper versionado con checksum para builds locales.
-- [ ] Añadir más GameTests de transacciones, construcción, persistencia y habilidades.
+- [x] Ampliar GameTests NeoForge a 8 casos obligatorios: round-trip de los 31 buckets avanzados y recuperación ante registros corruptos (CI #126).
+- [ ] Añadir más GameTests de transacciones, construcción y habilidades.
 
 ## P1 — Contratos de datos y seguridad de servidor
 
 1. Añadir versión de esquema para cada bucket y migraciones explícitas.
-2. Serializar/deserializar todos los tipos `MFAdvancedSavedData` con codecs reales NBT.
+2. [x] Serializar/deserializar los 31 buckets tipados de `MFAdvancedSavedData` con `CompoundTag` real + Gson y comparar igualdad tras recarga (GameTest NeoForge CI #126).
 3. Hacer idempotentes las transacciones de convoy, clínica, nacimiento/eclosión y construcción frente a reintentos y crash entre pasos.
 4. Validar dimensión, chunks cargados, límites, permisos, distancia y propietario en todos los comandos/eventos.
-5. Añadir telemetría de fallos y pruebas de overflow/corrupción de datos.
+5. [x] Aislar registros avanzados corruptos durante la carga: JSON inválido, tamaño superior a 32.000 caracteres, UUID ausente y UUID duplicado no eliminan registros válidos vecinos (GameTest NeoForge CI #126).
+   - [ ] Añadir telemetría de fallos y pruebas de overflow del presupuesto total de 64 MB.
 
 ## P2 — IA integral de ciudadanos
 
