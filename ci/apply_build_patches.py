@@ -395,4 +395,38 @@ for old, new in (
 advanced_commands.write_text(advanced_text, encoding="utf-8")
 print("Verified combat target adapter uses the server-raytraced livingTarget.")
 
+# Install the in-game command hub only after the core multiplayer/audio patch
+# has applied, so its validator can assert the complete patched project.
+menu_overlay_dir = Path(__file__).resolve().parent / "overlays"
+menu_overlay_parts = sorted(menu_overlay_dir.glob("main_menu_part*.b64")) if menu_overlay_dir.exists() else []
+menu_validator = project / "tools/validate_assets.py"
+menu_marker = "MAIN_GAMEPLAY_COMMAND_HUB_VALIDATION_V1"
+menu_ready = (
+    (root / "client/MFMainScreen.java").is_file()
+    and menu_marker in menu_validator.read_text(encoding="utf-8")
+)
+if menu_ready:
+    print("MEDIEVAL FACTIONS in-game command hub already present.")
+elif menu_overlay_parts:
+    menu_payload = "".join(part.read_text(encoding="ascii").strip() for part in menu_overlay_parts)
+    try:
+        menu_patch_bytes = gzip.decompress(base64.b64decode(menu_payload, validate=True))
+    except Exception as exc:
+        raise SystemExit(f"Could not decode in-game command hub patch: {exc}")
+    menu_result = subprocess.run(
+        ["patch", "--batch", "--forward", "-p1"],
+        cwd=project,
+        input=menu_patch_bytes,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(menu_result.stdout.decode("utf-8", errors="replace"))
+    if menu_result.returncode != 0:
+        raise SystemExit(f"In-game command hub patch failed with exit code {menu_result.returncode}")
+    if not (root / "client/MFMainScreen.java").is_file() or menu_marker not in menu_validator.read_text(encoding="utf-8"):
+        raise SystemExit("In-game command hub patch did not complete its validation marker.")
+    print(f"Installed in-game command hub ({len(menu_overlay_parts)} patch chunks).")
+else:
+    raise SystemExit("In-game command hub patch bundle is missing.")
+
 print("All CI compile and packaging patches applied successfully.")
