@@ -773,6 +773,98 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", batch = "residentResourceActions", timeoutTicks = 80)
+    public static void lumberjackPhysicallyFellsLogAndCreditsSettlement(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Forestry Action Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create forestry test faction"));
+        var settlement = world.createSettlement(faction.id(), "Timber Camp")
+                .orElseThrow(() -> new AssertionError("Could not create forestry test settlement"));
+        MFCitizenState worker = MFCitizenState.create(faction.id(), settlement.id(), "Test Lumberjack",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.LUMBERJACK, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(worker, faction.primaryRace()), "Could not register lumberjack");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        BlockPos log = standing.east();
+        helper.assertTrue(level.setBlock(log, Blocks.OAK_LOG.defaultBlockState(), 3), "Could not place test log");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(worker.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save lumberjack schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not construct lumberjack entity");
+        if (resident == null) return;
+        resident.bindCitizen(worker.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add lumberjack to test world");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(log).isAir(), "Lumberjack did not physically remove the log");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:oak_log", 0L) == 1L,
+                "Felled log was not credited to settlement inventory");
+        helper.assertTrue(world.citizen(worker.id()).map(c -> c.professionXp() == 8L).orElse(false),
+                "Successful felling did not award exactly eight profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:oak_log", 0L) == 1L,
+                "Repeated ticks duplicated the felled log credit");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "residentResourceActions", timeoutTicks = 80)
+    public static void minerPhysicallyMinesOreAndCreditsSettlement(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Mining Action Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create mining test faction"));
+        var settlement = world.createSettlement(faction.id(), "Ore Camp")
+                .orElseThrow(() -> new AssertionError("Could not create mining test settlement"));
+        MFCitizenState worker = MFCitizenState.create(faction.id(), settlement.id(), "Test Miner",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.MINER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(worker, faction.primaryRace()), "Could not register miner");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        BlockPos ore = standing.east();
+        helper.assertTrue(level.setBlock(ore, Blocks.IRON_ORE.defaultBlockState(), 3), "Could not place test ore");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(worker.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save miner schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not construct miner entity");
+        if (resident == null) return;
+        resident.bindCitizen(worker.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add miner to test world");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(ore).isAir(), "Miner did not physically remove the iron ore");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:raw_iron", 0L) == 1L,
+                "Mined ore was not converted to raw iron in settlement inventory");
+        helper.assertTrue(world.citizen(worker.id()).map(c -> c.professionXp() == 8L).orElse(false),
+                "Successful mining did not award exactly eight profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:raw_iron", 0L) == 1L,
+                "Repeated ticks duplicated the mined ore credit");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 80)
     public static void residentFarmerHarvestsMatureCropIntoSettlementStock(GameTestHelper helper) {
         var level = helper.getLevel();
