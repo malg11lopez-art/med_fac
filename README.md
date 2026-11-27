@@ -4,12 +4,10 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
 ## Última compilación verificada
 
-**CI #51 — SUCCESS** · commit `98d800e727da23eddb5b1a49b320100b6fbe7a27`.
+**CI #126 — SUCCESS** · commit `21b0958d2c80343d9b3426aa224b3b861fc51d56`.
 
-- JAR: `medieval_factions-0.9.1-alpha.jar`
-- Tamaño: 1.650.075 bytes
-- SHA-256: `5acfc06c96c13aea83b761b9dc04b47a87f679e2fca66385e24a13a6ebd7b88e`
-- [Ver ejecución #51 y descargar artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45917038330)
+- Artefacto JAR: `medieval-factions-jar-21b0958d2c80343d9b3426aa224b3b861fc51d56` (1.600.950 bytes, ZIP de Actions).
+- [Ver ejecución #126 y descargar artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45994340442)
 
 ## Funciones integradas en esta alpha
 
@@ -21,12 +19,12 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
 **Interfaz:** panel rápido en la tecla **O** con acceso a ficha, talentos, habilidades, compañeros, facciones, calendario, dashboard y skins. Es un panel de acceso a comandos, no una GUI integral de gestión.
 
-## Validación automatizada #51
+## Validación automatizada #126
 
 - 276 aserciones de dominio superadas.
 - 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG: cero errores y advertencias.
 - 86/86 skins y 14 comprobaciones de sincronización.
-- `gradle clean test build` y NeoForge GameTests: PASS.
+- `gradle clean test build`: PASS; NeoForge GameTests: 8/8 PASS.\n- NBT + Gson round-trip de los 31 buckets avanzados: PASS.\n- JSON corrupto, JSON >32.000 caracteres, UUID ausente y UUID duplicado se aíslan sin perder registros válidos: PASS.
 - Servidor dedicado y cliente headless: arranque y recarga de recursos correctos.
 - JAR `0.9.1-alpha`: descriptor e integridad verificados.
 - Documentación de estado, matriz y plan actualizada dentro del ZIP de fuentes.
@@ -35,7 +33,7 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
 - GUI gráfica de gestión para personaje, inventario, facción, ciudad, economía, diplomacia y guerra.
 - Pruebas manuales visuales/auditivas de animaciones, objetos, sonidos y skins; sesión multijugador con dos clientes.
-- Persistencia completa NBT, migraciones, mundo limpio/existente, reinicios, chunks y dimensiones.
+- Migraciones de mundos publicados anteriores, reinicios de mundo y pruebas de cortes del proceso durante guardado; CI #126 cubre un registro representativo de cada bucket y corrupción por registro, pero no aún los límites máximos agregados de datos.
 - IA social/laboral autónoma, navegación integral de habitantes y tareas físicas.
 - Constructor integral de ciudades, soldados y asedios visibles, carros físicos y mercados autónomos.
 - Vuelo autónomo y ciclo de vida completo de dragones, vida familiar/medicina y jefes físicos.
