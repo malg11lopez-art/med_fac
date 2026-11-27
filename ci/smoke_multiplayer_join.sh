@@ -62,8 +62,7 @@ client_insert = (
     "        client {\n"
     "            client()\n"
     "            gameDirectory = project.file('run/network-client')\n"
-    "            programArgument '--quickPlayMultiplayer'\n"
-    f"            programArgument '127.0.0.1:{port}'\n"
+    f"            systemProperty 'mf.ci.autoJoin', '127.0.0.1:{port}'\n"
 )
 server_insert = (
     "        server {\n"
@@ -121,11 +120,11 @@ JOINED=0
 SKIN_ACCEPTED=0
 SKIN_RECEIVED=0
 CLIENT_READY=0
-QUICKPLAY_ARGS=0
+AUTOJOIN_TRIGGERED=0
 
 for _ in $(seq 1 180); do
   grep -Fq 'Sound engine started' "$CLIENT_LOG" && CLIENT_READY=1 || true
-  grep -Fq -- '--quickPlayMultiplayer' "$CLIENT_LOG" && QUICKPLAY_ARGS=1 || true
+  grep -Fq 'MF_CI_AUTOJOIN_CONNECT' "$CLIENT_LOG" && AUTOJOIN_TRIGGERED=1 || true
   grep -Eq 'joined the game|logged in with entity id' "$SERVER_LOG" && JOINED=1 || true
   grep -Fq 'MF_SKIN_SELECTION_ACCEPTED' "$SERVER_LOG" && SKIN_ACCEPTED=1 || true
   grep -Fq 'MF_SKIN_SYNC_RECEIVED' "$CLIENT_LOG" && SKIN_RECEIVED=1 || true
@@ -150,8 +149,8 @@ if [ "$CLIENT_READY" -ne 1 ]; then
   echo "::error::Headless client did not initialize its sound engine."
   exit 1
 fi
-if [ "$QUICKPLAY_ARGS" -ne 1 ]; then
-  echo "::error::ModDevGradle did not pass the quick-play arguments into the Minecraft launch."
+if [ "$AUTOJOIN_TRIGGERED" -ne 1 ]; then
+  echo "::error::The CI-gated client connection probe did not run."
   exit 1
 fi
 if [ "$JOINED" -ne 1 ]; then
