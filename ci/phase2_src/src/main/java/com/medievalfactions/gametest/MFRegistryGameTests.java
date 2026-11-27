@@ -773,7 +773,7 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", batch = "residentProfessionActions", timeoutTicks = 80)
+    @GameTest(template = "empty", batch = "zResidentProfessionActions", timeoutTicks = 80)
     public static void fisherCatchesFishAtRealWaterWorksite(GameTestHelper helper) {
         var level = helper.getLevel();
         var server = level.getServer();
