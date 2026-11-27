@@ -106,7 +106,8 @@ if [ "$SERVER_READY" -ne 1 ]; then
   echo "::error::Dedicated server did not become ready for the network join test."
   exit 1
 fi
-if ! grep -Fq "Starting Minecraft server on /127.0.0.1:$PORT" "$SERVER_LOG" \
+if ! grep -Fq "Starting Minecraft server on 127.0.0.1:$PORT" "$SERVER_LOG" \
+    && ! grep -Fq "Starting Minecraft server on /127.0.0.1:$PORT" "$SERVER_LOG" \
     && ! grep -Fq "Starting Minecraft server on *:$PORT" "$SERVER_LOG"; then
   cat "$SERVER_LOG"
   echo "::error::Dedicated server did not bind to configured port $PORT."
