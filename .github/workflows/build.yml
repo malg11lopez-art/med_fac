@@ -15,6 +15,7 @@ on:
       - 'ci/verify_sound_preview.py'
       - 'ci/verify_skin_sync.py'
       - 'ci/verify_saveddata_schema.py'
+      - 'ci/verify_management_actions.py'
       - 'ci/quality_patch/**'
       - 'ci/patches/**'
       - '.github/workflows/build.yml'
@@ -131,6 +132,9 @@ jobs:
 
       - name: Verify versioned SavedData compatibility gates
         run: python ci/verify_saveddata_schema.py "${{ steps.archive.outputs.project_dir }}"
+
+      - name: Verify in-game management GUI actions
+        run: python ci/verify_management_actions.py "${{ steps.archive.outputs.project_dir }}"
 
       - name: Compile and test NeoForge mod
         working-directory: ${{ steps.archive.outputs.project_dir }}
