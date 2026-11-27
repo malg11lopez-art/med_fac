@@ -252,6 +252,29 @@ public final class MFWorldSavedData extends SavedData {
     }
 
     /**
+     * Atomically consumes one seed from a farmer's own settlement store.
+     * The caller debits before placement and refunds the seed if the world edit fails.
+     */
+    public synchronized boolean consumeResidentSeed(UUID settlementId, UUID citizenId, String seedItemId) {
+        MFSettlementState settlement = settlements.get(settlementId);
+        MFCitizenState farmer = citizens.get(citizenId);
+        if (settlement == null || farmer == null || !settlement.id().equals(farmer.settlementId())
+                || !settlement.factionId().equals(farmer.factionId())
+                || farmer.profession() != Profession.FARMER || farmer.status() != CitizenStatus.ACTIVE
+                || farmer.ageStage() == AgeStage.BABY || farmer.ageStage() == AgeStage.CHILD
+                || !java.util.Set.of("minecraft:wheat_seeds", "minecraft:carrot",
+                        "minecraft:potato", "minecraft:beetroot_seeds").contains(seedItemId)) return false;
+        long available = settlement.inventory().getOrDefault(seedItemId, 0L);
+        if (available < 1L) return false;
+        LinkedHashMap<String, Long> nextStock = new LinkedHashMap<>(settlement.inventory());
+        if (available == 1L) nextStock.remove(seedItemId);
+        else nextStock.put(seedItemId, available - 1L);
+        settlements.put(settlementId, settlement.withInventory(nextStock));
+        setDirty();
+        return true;
+    }
+
+    /**
      * Consumes one real settlement ration to feed an active resident.
      * Hunger, health, satisfaction and stored food are committed together.
      */

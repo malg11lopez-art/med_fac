@@ -94,7 +94,8 @@ public final class MFResidentEntity extends MFAnimatedMob {
             .triggerableAnim("resident_sleep", RawAnimation.begin().thenLoop("animation.guard.resident_sleep"))
             .triggerableAnim("resident_eat", RawAnimation.begin().thenLoop("animation.guard.resident_eat"))
             .triggerableAnim("resident_socialize", RawAnimation.begin().thenLoop("animation.guard.resident_socialize"))
-            .triggerableAnim("resident_train", RawAnimation.begin().thenLoop("animation.guard.resident_train"));
+            .triggerableAnim("resident_train", RawAnimation.begin().thenLoop("animation.guard.resident_train"))
+            .triggerableAnim("plant", RawAnimation.begin().thenPlay("animation.guard.plant"));
         MFGuardEntity.ACTION_CLIPS.forEach((trigger, clip) -> actions.triggerableAnim(trigger, RawAnimation.begin().thenPlay(clip)));
         controllers.add(actions);
     }
@@ -149,10 +150,18 @@ public final class MFResidentEntity extends MFAnimatedMob {
             // Waypoints may identify the workstation block itself or the standing
             // position one block above it.
             boolean workActionCompleted = false;
+            String workActionTrigger = null;
             if (plan.activity() == MFCitizenSimulation.Activity.WORK) {
                 if (citizen.profession() == Profession.FARMER) {
-                    workActionCompleted = harvestMatureCrop(serverLevel, worldData, citizen, target)
+                    boolean harvested = harvestMatureCrop(serverLevel, worldData, citizen, target)
                             || harvestMatureCrop(serverLevel, worldData, citizen, target.below());
+                    if (harvested) {
+                        workActionCompleted = true;
+                    } else {
+                        workActionCompleted = plantCropOnFarmland(serverLevel, worldData, citizen, target)
+                                || plantCropOnFarmland(serverLevel, worldData, citizen, target.below());
+                        if (workActionCompleted) workActionTrigger = "plant";
+                    }
                 } else {
                     String stationAtTarget = BuiltInRegistries.BLOCK.getKey(
                             serverLevel.getBlockState(target).getBlock()).toString();
@@ -186,7 +195,9 @@ public final class MFResidentEntity extends MFAnimatedMob {
             // Work/eating animations run only after a real crop harvest, accepted station job or consumed meal.
             boolean actionSucceeded = (plan.activity() != MFCitizenSimulation.Activity.WORK || workActionCompleted)
                     && (plan.activity() != MFCitizenSimulation.Activity.EAT || eatActionCompleted);
-            setActionTrigger(actionSucceeded ? actionFor(plan.activity(), citizen.profession()) : null);
+            String action = workActionTrigger != null ? workActionTrigger
+                    : actionFor(plan.activity(), citizen.profession());
+            setActionTrigger(actionSucceeded ? action : null);
             data.reportResidentWaypointArrival(serverLevel, citizenId);
             return;
         }
@@ -198,6 +209,46 @@ public final class MFResidentEntity extends MFAnimatedMob {
             getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
             lastNavigationTarget = target;
         }
+    }
+
+    private static boolean plantCropOnFarmland(ServerLevel level, MFWorldSavedData worldData,
+                                                 MFCitizenState citizen, BlockPos position) {
+        if (level == null || worldData == null || citizen == null || position == null
+                || citizen.profession() != Profession.FARMER || !level.hasChunkAt(position)
+                || !level.hasChunkAt(position.below()) || !level.getBlockState(position).isAir()
+                || !level.getBlockState(position.below()).is(Blocks.FARMLAND)) return false;
+        var settlement = worldData.settlement(citizen.settlementId()).orElse(null);
+        if (settlement == null) return false;
+        var stock = settlement.inventory();
+        String seedItem;
+        net.minecraft.world.level.block.state.BlockState crop;
+        if (stock.getOrDefault("minecraft:wheat_seeds", 0L) > 0L) {
+            seedItem = "minecraft:wheat_seeds";
+            crop = Blocks.WHEAT.defaultBlockState();
+        } else if (stock.getOrDefault("minecraft:carrot", 0L) > 0L) {
+            seedItem = "minecraft:carrot";
+            crop = Blocks.CARROTS.defaultBlockState();
+        } else if (stock.getOrDefault("minecraft:potato", 0L) > 0L) {
+            seedItem = "minecraft:potato";
+            crop = Blocks.POTATOES.defaultBlockState();
+        } else if (stock.getOrDefault("minecraft:beetroot_seeds", 0L) > 0L) {
+            seedItem = "minecraft:beetroot_seeds";
+            crop = Blocks.BEETROOTS.defaultBlockState();
+        } else {
+            return false;
+        }
+        if (!crop.canSurvive(level, position)) return false;
+        if (!worldData.consumeResidentSeed(citizen.settlementId(), citizen.id(), seedItem)) return false;
+        if (!level.setBlock(position, crop, 3)) {
+            worldData.addSettlementStock(citizen.settlementId(), seedItem, 1L);
+            return false;
+        }
+        level.playSound(null, position, net.minecraft.sounds.SoundEvents.HOE_TILL,
+                net.minecraft.sounds.SoundSource.BLOCKS, 0.55F, 0.95F + level.random.nextFloat() * 0.1F);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                position.getX() + 0.5D, position.getY() + 0.55D, position.getZ() + 0.5D,
+                2, 0.16D, 0.12D, 0.16D, 0.01D);
+        return true;
     }
 
     private static boolean harvestMatureCrop(ServerLevel level, MFWorldSavedData worldData,

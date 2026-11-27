@@ -781,4 +781,44 @@ if "VISUAL_ROLE" not in resident_entity_text or "defineSynchedData" not in resid
     raise SystemExit("Resident profession appearance key is not synchronized to clients.")
 print("Verified six profession-specific resident textures and synchronized renderer mapping.")
 
+# Add the farmer's planting motion to the shared resident/guard animation rig.
+# Keep this transformation idempotent so repeated CI builds remain deterministic.
+import json
+plant_animation_file = project / "src/main/resources/assets/medieval_factions/animations/entities/guard_full.animation.json"
+if not plant_animation_file.is_file():
+    raise SystemExit("Missing shared resident animation file for planting motion.")
+plant_animation_data = json.loads(plant_animation_file.read_text(encoding="utf-8"))
+plant_clip = {
+    "animation_length": 0.9,
+    "loop": False,
+    "bones": {
+        "body": {"rotation": {
+            "0": [0, 0, 0],
+            "0.3": [12, 0, 0],
+            "0.62": [5, 0, 0],
+            "0.9": [0, 0, 0]
+        }},
+        "right_arm": {"rotation": {
+            "0": [-15, 0, 0],
+            "0.22": [-72, 0, -28],
+            "0.48": [-42, 0, 12],
+            "0.9": [-15, 0, 0]
+        }},
+        "left_arm": {"rotation": {
+            "0": [-8, 0, 0],
+            "0.3": [-24, 0, 8],
+            "0.58": [-10, 0, 4],
+            "0.9": [-8, 0, 0]
+        }}
+    }
+}
+animations = plant_animation_data.setdefault("animations", {})
+if animations.get("animation.guard.plant") not in (None, plant_clip):
+    raise SystemExit("Existing animation.guard.plant differs from the audited planting clip.")
+animations["animation.guard.plant"] = plant_clip
+plant_animation_file.write_text(json.dumps(plant_animation_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+if "animation.guard.plant" not in plant_animation_file.read_text(encoding="utf-8"):
+    raise SystemExit("Failed to install the farmer planting animation.")
+print("Installed idempotent animation.guard.plant clip.")
+
 print("All CI compile and packaging patches applied successfully.")
