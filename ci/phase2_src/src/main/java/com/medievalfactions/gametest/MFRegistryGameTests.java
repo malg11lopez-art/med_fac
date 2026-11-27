@@ -747,7 +747,7 @@ public final class MFRegistryGameTests {
                 .orElseThrow(() -> new AssertionError("Could not create resource test faction"));
         var settlement = world.createSettlement(faction.id(), "Timber and Ore")
                 .orElseThrow(() -> new AssertionError("Could not create resource test settlement"));
-        int adultAge = MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS);
+        long adultAge = MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS);
         MFCitizenState lumberjack = MFCitizenState.create(faction.id(), settlement.id(), "Lumberjack",
                 MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.LUMBERJACK, 0L, 20, adultAge);
         MFCitizenState miner = MFCitizenState.create(faction.id(), settlement.id(), "Miner",
