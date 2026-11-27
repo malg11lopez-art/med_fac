@@ -22,10 +22,13 @@ Estos cambios estabilizan y amplían la base; no completan la simulación social
 - 75/75 sonidos referenciados por keyframes o acciones runtime; la calidad auditiva humana aún necesita prueba manual.
 - Habilidades elemental_burst y shadow_blink, ray tracing de objetivos con obstáculos y panel rápido en tecla O.
 - Búsqueda indexada de ciudadanos por UUID para evitar recorrer toda la población desde cada residente.
+- Textura civil 128×128 y modelo separado para residentes; los guardias conservan su textura acorazada.
+- Cosecha de cultivos con XP de profesión, audio y partículas; comida con consumo real de raciones; socialización con satisfacción bilateral y cooldown persistente.
+- Dashboard global restringido a operadores y comando de estado familiar filtrado por el UUID del jugador.
 
 ## Sistemas heredados de v0.8
 
-- **Habitantes:** horarios diarios, directivas de supervivencia y navegación terrestre vanilla. El residente inicia recetas iniciales solo al alcanzar un bloque físico compatible (mesa de crafteo, forja/yunque u horno según receta); la orden reserva materiales y avanza en el ciclo diario. A* 3D sigue como motor puro sin conexión a `PathNavigation`; siguen pendientes recolección/transporte autónomo, uso interactivo de estaciones/contenedores, tareas de campo e IA social.
+- **Habitantes:** horarios diarios, directivas de supervivencia y navegación terrestre vanilla. Se añaden cosecha física de cuatro cultivos con replantación/XP, comidas que consumen reservas y socialización entre residentes del mismo asentamiento. A* 3D sigue como motor puro sin conexión a `PathNavigation`; faltan transporte, tareas de campo variadas, memoria social y relaciones autónomas.
 - **Ciudad:** parcelas, distritos, validación de límites/solapamiento, reserva de materiales y enlace al proceso físico de construcción. Los blueprints reales siguen limitados a `small_house` y `watchtower`.
 - **Guerra táctica:** unidades abstractas, órdenes MOVE/ATTACK/BLOCK/DODGE/RALLY/RETREAT, formaciones, turnos, columnas logísticas y ocupación persistente. No crea soldados visibles todavía.
 - **Caravanas:** convoyes físicos simulados por waypoints, mercancía y escrow reservados, emboscadas, carga perdida, reanudación y liquidación bilateral. No hay carro ni escolta como entidades.
@@ -41,6 +44,7 @@ Estos cambios estabilizan y amplían la base; no completan la simulación social
 - `/mf advanced city plan|build|list`
 - `/mf advanced caravan physical|resume|list-physical`
 - `/mf advanced companion genome|breed|incubate|hatch`
+- `/mf advanced family status` (solo datos del jugador solicitante)
 - `/mf advanced family marriage propose|answer|divorce`
 - `/mf advanced family clinic register|open|treat`
 - `/mf advanced expedition route`
@@ -105,3 +109,13 @@ Estos checks cubren la capa de simulación y persistencia. No certifican todaví
 - El build, el arranque del servidor y cliente, y el smoke test de conexión/sincronización multijugador pasan; el JAR se publica como artefacto de CI.
 
 La cobertura por registro no sustituye todavía pruebas de volúmenes máximos, presupuesto agregado de 64 MB, interrupción durante guardado ni migración de mundos publicados anteriores.
+
+
+## Validación adicional — CI run 46024843978
+
+- 12/12 GameTests NeoForge superados, incluidos cosecha, XP, socialización bilateral, límites entre asentamientos y consumo real de comida.
+- 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG validados.
+- Compilación NeoForge, integridad del JAR, servidor dedicado, cliente headless y recarga de recursos: PASS.
+- Conexión cliente-servidor y round-trip de paquetes de skin: PASS.
+
+La textura civil y las animaciones/sonidos cargan en el cliente headless. Sigue pendiente la inspección visual/auditiva humana, las variantes de ropa por profesión y el test de rendimiento prolongado.

@@ -1,69 +1,80 @@
 # Auditoría general — MEDIEVAL FACTIONS v0.9.1-alpha
 
 **Fecha:** 27-11-2026  
-**Ejecución:** [GitHub Actions #142 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/46000855445)  
-**Commit:** `2e47da2fd6efa2131de129ed3290beaa931ed90a`  
-**JAR:** `medieval_factions-0.9.1-alpha.jar`  
-**Tamaño:** 1.650.075 bytes  
-**SHA-256:** `5acfc06c96c13aea83b761b9dc04b47a87f679e2fca66385e24a13a6ebd7b88e`
+**Rama auditada:** `feat/phase10-resident-meal-needs`  
+**Commit:** `a4edb23a6986e49e56dbfe33ec847d6a2e841f69`  
+**CI:** [run 46024843978 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/46024843978)
 
 ## Resumen ejecutivo
 
-La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameTests y arranca tanto servidor dedicado como cliente headless. La selección de skins tiene sincronización cliente-servidor y persistencia por jugador; se han añadido disparadores de audio, dos habilidades, ray tracing de entidades, un panel de acceso rápido y una ruta de búsqueda indexada para datos de residentes. El panel O no es una GUI de gestión integral.
+La rama compila para Minecraft 1.21.1 / NeoForge 21.1.267. La última CI valida recursos, compilación, 12 GameTests NeoForge, JAR, servidor dedicado, cliente headless, recarga de recursos y conexión real cliente-servidor. La continuación integra cosecha autónoma con experiencia de profesión, apariencia civil de residentes, seguridad del dashboard, consulta familiar personal, socialización y comidas con consumo real de reservas.
+
+El trabajo sigue en PRs apiladas y **no está fusionado en `main`**. Una CI verde acredita los flujos probados, no la finalización de todas las verticales.
 
 ## Resultado de comprobaciones
 
 | Comprobación | Resultado |
 |---|---|
 | Build ZIP y aplicación de parches | PASS |
-| Recursos JSON | 111, cero errores y cero advertencias |
+| Recursos JSON | 111, cero errores/advertencias |
 | Geo rigs | 14 PASS |
 | SoundEvents / OGG | 75 / 75 PASS |
-| Referencias de audio en keyframes/runtime | 75/75 según auditor estático |
-| Sincronización de skins | 86/86 texturas, 14/14 checks |
-| Pruebas de dominio | 276 aserciones PASS |
+| Sincronización de skins | 86/86 texturas, checks estáticos PASS |
+| Pruebas de dominio | PASS |
 | SavedData stub smoke test | PASS, cobertura parcial |
-| Gradle clean test build | PASS |
-| NeoForge GameTests | PASS |
-| Descriptor/JAR versión 0.9.1-alpha | PASS |
+| Compilación NeoForge | PASS |
+| NeoForge GameTests | 12/12 PASS |
+| Descriptor e integridad del JAR | PASS |
 | Arranque de servidor dedicado | PASS |
 | Arranque de cliente y recarga de recursos | PASS |
-| Artefacto publicado | PASS |
+| Conexión cliente-servidor y skin packet round-trip | PASS |
 
-## Fase 8 — cosecha autónoma validada en rama
+## Fase 8 — cosecha autónoma y progresión
 
-La rama `feat/phase8-autonomous-crop-harvest` implementa cosecha física inicial por residentes agricultores: trigo, zanahorias, patatas y remolacha maduros; replantación; y abono del producto al almacén del asentamiento. El GameTest prepara el cultivo en el mundo NeoForge, asigna el trabajo al residente y verifica la interacción. La ejecución CI #142 pasó compilación, 9 GameTests, verificación del JAR, arranque de servidor dedicado y cliente, conexión real y sincronización de skin. Esta fase sigue pendiente de revisión y merge a `main`.
+- Agricultores cosechan trigo, zanahorias, patatas y remolachas maduras en su waypoint.
+- El cultivo se replanta a edad cero.
+- El producto se acredita al inventario del asentamiento.
+- La cosecha y los 12 XP de profesión se aplican en una transacción sincronizada.
+- Si la transacción no puede completarse, se restaura el cultivo original.
+- Se reproduce sonido vanilla de rotura de cultivo y se emiten partículas de éxito.
+- GameTests comprueban replantación, inventario, experiencia y ausencia de duplicación.
 
-## Mejoras funcionales incluidas
+## Fase 9 — gestión, seguridad y familia
 
-1. Sincronización servidor-cliente y persistencia de las 86 skins. La selección se conserva en NBT por jugador, se difunde al cambiar y se reenvía al entrar/respawnear. El servidor valida índices y limita la frecuencia.
-2. Audio integrado en pasos, espada, parry, armadura, puertas, crafting, fundición, ambientes contextuales, progreso, caballo y habilidades.
-3. `elemental_burst` y `shadow_blink` con validación en servidor, costes, cooldown, daño/teletransporte seguro, partículas y sonidos.
-4. Selección de objetivos mediante ray tracing de entidades limitado por la primera colisión de bloque.
-5. Panel O con accesos a comandos existentes; CI comprueba la tecla y los comandos de destino.
-6. Lookup indexado de ciudadano por UUID para reducir trabajo repetido por entidad residente.
-7. Documentación de estado, matriz de cobertura, puertas de calidad y plan de implementación actualizadas dentro del ZIP de fuentes.
+- El panel global de gestión requiere permiso de operador nivel 2 porque contiene datos de todo el mundo.
+- Las solicitudes del dashboard tienen un cooldown de cinco ticks por jugador.
+- La GUI ofrece un botón contextual para preparar una consulta de la sección seleccionada y reserva espacio para el editor de comandos.
+- `/mf advanced family status` muestra el registro familiar, relaciones consentidas, matrimonios, gestaciones y casos médicos del propio jugador. Los filtros se aplican por UUID del jugador.
+- La interfaz sigue siendo principalmente de consulta y comandos; no es una GUI integral con menús e inventarios.
 
-## Limitaciones y trabajo no demostrado
+## Fase 10 — vida cotidiana inicial
 
-- La sincronización de skins no se ha observado todavía con dos clientes reales y no aplica skins a NPC.
-- Los OGG se validan y el cliente headless arranca con audio nulo. Falta escuchar cada efecto, ajustar mezcla, repetición, espacialización y sincronía real.
-- La carga de recursos y el registro de capas no certifican cada animación renderizada durante combate/movimiento ni cada skin en un mundo real.
-- El panel O es un menú de acceso a comandos; faltan pantallas gráficas completas y contenedores cliente-servidor.
-- El SavedData stub no sustituye el round-trip NBT real de todos los tipos, migraciones y reinicio de mundo.
-- Falta test prolongado de servidor y profiling con 50/100/250 NPC, rutas, convoyes y batallas simultáneas.
-- Ciudad, ejército/conquista, caravanas, vuelo autónomo, vida familiar y jefes aún no forman experiencias completas de producto.
+- La actividad SOCIALIZE requiere dos residentes activos del mismo asentamiento.
+- Una interacción incrementa la satisfacción de ambos en un punto, se limita a una cada 600 ticks y el cooldown se guarda en NBT.
+- El orden de UUID evita que ambos residentes otorguen dos veces la misma interacción.
+- Una interacción correcta reproduce audio de aldeano y partículas de satisfacción.
+- La actividad EAT consume una ración real del almacén, reduce hambre en 35, restaura un punto de salud y aumenta satisfacción en dos.
+- La comida tiene cooldown persistente de 600 ticks y solo reproduce sonido/animación tras consumir una ración.
+- GameTests verifican el aumento bilateral de satisfacción, rechazo entre asentamientos, consumo exacto de alimento y rechazo cuando el almacén está vacío.
 
-## Auditoría técnica
+## Arte, animación y sonido
 
-**Defectos corregidos durante esta continuación:**
+- Se añadió `textures/entity/resident.png`, textura civil 128×128 RGBA para el rig humanoide existente.
+- `MFResidentModel` separa la apariencia de residente de la textura acorazada del guardia.
+- Se reutilizan animaciones existentes de sueño, comida, socialización, entrenamiento y profesiones.
+- La cosecha utiliza el sonido vanilla de cultivo; socialización y comida usan sonidos vanilla y partículas.
+- La validación de PNG/JSON y la recarga headless pasan. **No se ha hecho todavía una revisión visual humana en un mundo renderizado ni una escucha humana de audio.**
 
-- El selector de objetivos usaba `ServerPlayer.pick()` como si devolviera `EntityHitResult`; se sustituyó por ray tracing de entidades que respeta los obstáculos.
-- Tres referencias locales obsoletas (`living`) se corrigieron a `livingTarget` tras detectar un fallo real de `compileJava`.
-- Los paquetes de selección de skin se procesan con `enqueueWork` en los hilos lógicos de servidor y cliente.
-- Los residentes consultan `MFWorldSavedData.citizen(UUID)` en vez de reconstruir/recorrer la lista completa cada actualización.
-- Los smoke tests de cliente/servidor terminan al alcanzar marcadores de disponibilidad.
-- El JAR debe declarar exactamente `0.9.1-alpha`; el atajo del panel se valida como tecla O (79).
-- El texto del dashboard y la documentación del ZIP ya no contradicen las integraciones actuales.
+## Defectos y limitaciones detectados
 
-**Dictamen:** CI #51 acredita build, GameTests existentes y smoke startup/recarga de recursos. No acredita una partida manual completa ni el cumplimiento del Documento Maestro. El proyecto sigue siendo alpha.
+- La primera ejecución de la CI social falló en el GameTest de cosecha; el reintento completo y la CI posterior con las dos mecánicas nuevas pasaron. Conviene vigilar la estabilidad del batch de GameTests en futuras ejecuciones.
+- La textura civil es una base común; faltan variantes por profesión, raza, equipo y estación.
+- La socialización no crea todavía amistades persistentes, memoria social, personalidad, hostilidad ni relaciones familiares autónomas.
+- Las comidas son una acción de necesidad básica; no hay todavía menú individual, dieta por raza, cocina autónoma ni transporte de alimentos.
+- El panel O no implementa `AbstractContainerMenu`, inventarios gráficos ni gestión completa de ciudad/economía/guerra.
+- El SavedData stub no sustituye pruebas de round-trip NBT real de todos los tipos y migraciones.
+- Falta profiling con 50/100/250 residentes, rutas y convoyes simultáneos.
+
+## Dictamen
+
+CI run 46024843978 acredita compilación, 12 GameTests y smoke tests de servidor/cliente/conexión. Las fases 8–10 tienen mecánicas incrementales reales, pero siguen parciales. No se declara completo el mod ni una vertical que todavía no tenga todas sus interfaces, estados, pruebas y validación manual.
