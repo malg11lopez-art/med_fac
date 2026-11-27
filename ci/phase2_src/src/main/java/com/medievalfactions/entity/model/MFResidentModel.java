@@ -14,7 +14,14 @@ public final class MFResidentModel extends GeoModel<MFResidentEntity> {
 
     @Override
     public ResourceLocation getTextureResource(MFResidentEntity animatable) {
-        return ResourceLocation.fromNamespaceAndPath(MedievalFactions.MOD_ID, "textures/entity/resident.png");
+        String texture = switch (animatable.appearanceId()) {
+            case 1 -> "resident_farmer.png";
+            case 2 -> "resident_smith.png";
+            case 3 -> "resident_mage.png";
+            case 4 -> "resident_trader.png";
+            default -> "resident.png";
+        };
+        return ResourceLocation.fromNamespaceAndPath(MedievalFactions.MOD_ID, "textures/entity/" + texture);
     }
 
     @Override

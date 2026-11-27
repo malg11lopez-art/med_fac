@@ -6,6 +6,9 @@ import com.medievalfactions.domain.MFCitizenState;
 import com.medievalfactions.domain.MFGameCatalog.Profession;
 import com.medievalfactions.data.MFWorldSavedData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Items;
 import net.minecraft.nbt.CompoundTag;
@@ -25,6 +28,9 @@ import java.util.UUID;
 
 /** Visible resident linked to a persistent citizen record; server plans drive vanilla path navigation. */
 public final class MFResidentEntity extends MFAnimatedMob {
+    private static final EntityDataAccessor<Integer> DATA_APPEARANCE = SynchedEntityData.defineId(
+            MFResidentEntity.class, EntityDataSerializers.INT);
+
     private UUID citizenId;
     private BlockPos lastNavigationTarget;
     private String activeActionTrigger;
@@ -32,6 +38,29 @@ public final class MFResidentEntity extends MFAnimatedMob {
     private long lastMealTick = -1L;
 
     public MFResidentEntity(EntityType<? extends MFResidentEntity> type, Level level) { super(type, level); }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_APPEARANCE, 0);
+    }
+
+    public int appearanceId() {
+        return getEntityData().get(DATA_APPEARANCE);
+    }
+
+    /** Maps profession groups to client-synchronized civilian clothing variants. */
+    public static int appearanceFor(Profession profession) {
+        if (profession == null) return 0;
+        return switch (profession) {
+            case FARMER, RANCHER, SHEPHERD, HORSE_BREEDER, APICULTURIST -> 1;
+            case BLACKSMITH, ARMORER, SMELTER -> 2;
+            case MAGICAL_ARTISAN, ALCHEMIST, ARCANE_RESEARCHER, ELEMENTAL_MASTER -> 3;
+            case TRADER, APPRAISER, WHOLESALER, BANKER, TREASURER, MINT_MASTER,
+                    ACCOUNTANT, TAX_COLLECTOR, LENDER, AUCTIONEER -> 4;
+            default -> 0;
+        };
+    }
 
     public void bindCitizen(UUID id) {
         if (id == null) throw new IllegalArgumentException("Citizen identity required");
@@ -69,6 +98,10 @@ public final class MFResidentEntity extends MFAnimatedMob {
         var plan = data.record("citizen_plans", citizenId, MFCitizenSimulation.CitizenPlan.class).orElse(null);
         if (plan == null || citizen == null || citizen.status() != com.medievalfactions.domain.MFGameCatalog.CitizenStatus.ACTIVE) {
             getNavigation().stop(); lastNavigationTarget = null; setActionTrigger(null); return;
+        }
+        int appearance = appearanceFor(citizen.profession());
+        if (getEntityData().get(DATA_APPEARANCE) != appearance) {
+            getEntityData().set(DATA_APPEARANCE, appearance);
         }
         if (plan.activity() == MFCitizenSimulation.Activity.SOCIALIZE) {
             var neighbours = serverLevel.getEntitiesOfClass(MFResidentEntity.class, getBoundingBox().inflate(8.0D),
