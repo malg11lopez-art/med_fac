@@ -478,4 +478,39 @@ validator_text=validator_text.replace(menu_validation_old,menu_validation_new,1)
 menu_validator.write_text(validator_text,encoding="utf-8")
 print("Pinned the in-game command hub to O and verified backing commands.")
 
+# Use indexed UUID access for resident entities. The previous implementation
+# allocated and scanned the full citizen population every 10 ticks per resident.
+resident_overlay_dir = Path(__file__).resolve().parent / "overlays"
+resident_overlay_parts = sorted(resident_overlay_dir.glob("resident_indexed_lookup_part*.b64")) if resident_overlay_dir.exists() else []
+resident_validator = project / "tools/validate_assets.py"
+resident_marker = "RESIDENT_INDEXED_LOOKUP_VALIDATION_V1"
+resident_ready = (
+    "Optional<MFCitizenState> citizen(UUID citizenId)" in (project / "src/main/java/com/medievalfactions/data/MFWorldSavedData.java").read_text(encoding="utf-8")
+    and "worldData.citizen(citizenId).orElse(null)" in (root / "entity/MFResidentEntity.java").read_text(encoding="utf-8")
+    and resident_marker in resident_validator.read_text(encoding="utf-8")
+)
+if resident_ready:
+    print("Indexed resident lookup optimization already present.")
+elif resident_overlay_parts:
+    resident_payload = "".join(part.read_text(encoding="ascii").strip() for part in resident_overlay_parts)
+    try:
+        resident_patch_bytes = gzip.decompress(base64.b64decode(resident_payload, validate=True))
+    except Exception as exc:
+        raise SystemExit(f"Could not decode indexed resident lookup patch: {exc}")
+    resident_result = subprocess.run(
+        ["patch", "--batch", "--forward", "-p1"],
+        cwd=project,
+        input=resident_patch_bytes,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(resident_result.stdout.decode("utf-8", errors="replace"))
+    if resident_result.returncode != 0:
+        raise SystemExit(f"Indexed resident lookup patch failed with exit code {resident_result.returncode}")
+    if resident_marker not in resident_validator.read_text(encoding="utf-8"):
+        raise SystemExit("Indexed resident lookup patch did not complete its validation marker.")
+    print(f"Applied indexed resident lookup and regression tests ({len(resident_overlay_parts)} chunks).")
+else:
+    raise SystemExit("Indexed resident lookup patch bundle is missing.")
+
 print("All CI compile and packaging patches applied successfully.")
