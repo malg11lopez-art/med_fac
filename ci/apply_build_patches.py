@@ -816,7 +816,7 @@ animations = plant_animation_data.setdefault("animations", {})
 if animations.get("animation.guard.plant") not in (None, plant_clip):
     raise SystemExit("Existing animation.guard.plant differs from the audited planting clip.")
 animations["animation.guard.plant"] = plant_clip
-plant_animation_file.write_text(json.dumps(plant_animation_data, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+plant_animation_file.write_text(json.dumps(plant_animation_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 if "animation.guard.plant" not in plant_animation_file.read_text(encoding="utf-8"):
     raise SystemExit("Failed to install the farmer planting animation.")
 print("Installed idempotent animation.guard.plant clip.")
