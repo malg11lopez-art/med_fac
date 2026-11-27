@@ -345,10 +345,11 @@ public final class MFRegistryGameTests {
                         MFCitizenSimulation.CitizenSchedule.class).isPresent(),
                 "Resident schedule was not persisted");
         helper.assertTrue(advanced.storeSimulationRecord("citizen_plans", worker.id(),
-                new MFCitizenSimulation.CitizenPlan(worker.id(), MFCitizenSimulation.Activity.WORK,
-                        MFCitizenSimulation.Directive.CONTINUE_WORK,
+                new MFCitizenSimulation.CitizenPlan(worker.id(), MFCitizenSimulation.Directive.WORK,
+                        MFCitizenSimulation.Activity.WORK,
                         new MFCitizenSimulation.Waypoint(dimension, standingPosition.getX(),
-                                standingPosition.getY(), standingPosition.getZ())),
+                                standingPosition.getY(), standingPosition.getZ()),
+                        70, "GameTest physical workstation assignment"),
                 MFCitizenSimulation.CitizenPlan.class),
                 "Could not persist the explicit physical workstation plan");
         helper.assertTrue(advanced.storeSimulationRecord("npc_directives", worker.id(),
