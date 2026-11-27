@@ -39,6 +39,7 @@ import static com.medievalfactions.domain.MFGameCatalog.*;
 /** Persistent storage and authoritative server-side orchestration for advanced world systems. */
 public final class MFAdvancedSavedData extends SavedData {
     private static final String DATA_ID = "medieval_factions_advanced_v1";
+    private static final int SCHEMA_VERSION = 1;
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     private static final int MAX_RECORDS_PER_BUCKET = 25_000;
     private static final int MAX_RECORD_JSON_CHARS = 32_000;
@@ -1343,6 +1344,7 @@ public final class MFAdvancedSavedData extends SavedData {
     // SavedData serialization. Each typed record is stored as bounded JSON in its own NBT entry.
     // ------------------------------------------------------------------
     public static MFAdvancedSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
+        MFSavedDataSchema.requireSupported(tag, SCHEMA_VERSION, DATA_ID);
         MFAdvancedSavedData data = new MFAdvancedSavedData();
         CompoundTag root = tag.getCompound("advanced_records");
         long totalJsonChars = 0L;
@@ -1369,6 +1371,7 @@ public final class MFAdvancedSavedData extends SavedData {
     }
 
     @Override public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        tag.putInt("schema_version", SCHEMA_VERSION);
         tag.putLong("last_advanced_day", lastAdvancedDay);
         CompoundTag root = new CompoundTag();
         long totalJsonChars = 0L;

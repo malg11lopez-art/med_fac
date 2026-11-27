@@ -34,6 +34,9 @@ if len(skins) != expected:
 checks = {
     "validated server-bound packet": "playToServer" in code["server_network"] and "isValidIndex(index)" in code["server_network"],
     "server-thread scheduling": "context.enqueueWork" in code["server_network"],
+    "server registers clientbound skin sync": "playToClient(MFPlayerSkinSyncPayload.TYPE" in code["server_network"],
+    "server registers clientbound management snapshot": "playToClient(MFManagementSnapshotPayload.TYPE" in code["server_network"],
+    "clientbound declarations only on dedicated server": "FMLEnvironment.dist == Dist.DEDICATED_SERVER" in code["server_network"],
     "server persistence": "getPersistentData()" in code["server_network"] and "putInt(MFPlayerSkinRules.DATA_KEY, index)" in code["server_network"],
     "broadcast to connected clients": "PacketDistributor.sendToAllPlayers" in code["server_network"],
     "client-bound packet registration": "playToClient" in code["client_events"],

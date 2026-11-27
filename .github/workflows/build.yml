@@ -14,6 +14,7 @@ on:
       - 'ci/phase2_src/**'
       - 'ci/verify_sound_preview.py'
       - 'ci/verify_skin_sync.py'
+      - 'ci/verify_saveddata_schema.py'
       - 'ci/quality_patch/**'
       - 'ci/patches/**'
       - '.github/workflows/build.yml'
@@ -128,6 +129,9 @@ jobs:
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: bash tools/run_saveddata_stub_tests.sh
 
+      - name: Verify versioned SavedData compatibility gates
+        run: python ci/verify_saveddata_schema.py "${{ steps.archive.outputs.project_dir }}"
+
       - name: Compile and test NeoForge mod
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: gradle --no-daemon clean test build
@@ -148,7 +152,6 @@ jobs:
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: bash "$GITHUB_WORKSPACE/ci/smoke_client_start.sh"
       - name: Verify live client/server join and skin packet round-trip
-        continue-on-error: true
         timeout-minutes: 7
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: bash "$GITHUB_WORKSPACE/ci/smoke_multiplayer_join.sh"

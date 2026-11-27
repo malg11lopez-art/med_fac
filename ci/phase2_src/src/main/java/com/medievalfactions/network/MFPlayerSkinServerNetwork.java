@@ -2,13 +2,13 @@ package com.medievalfactions.network;
 
 import com.medievalfactions.MedievalFactions;
 import com.medievalfactions.data.MFManagementDashboard;
-import com.medievalfactions.network.MFManagementRequestPayload;
-import com.medievalfactions.network.MFManagementSnapshotPayload;
 import com.mojang.logging.LogUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
@@ -31,6 +31,20 @@ public final class MFPlayerSkinServerNetwork {
         registrar.playToServer(MFManagementRequestPayload.TYPE,
                 MFManagementRequestPayload.STREAM_CODEC,
                 MFPlayerSkinServerNetwork::handleManagementRequest);
+
+        // A dedicated server has no client event subscriber, so it must declare
+        // these outbound channels with no-op local handlers for negotiation.
+        // In a client JVM, MFClientEvents registers the same payload IDs with
+        // their real client handlers; registering them here as well would make
+        // NeoForge reject the duplicate during startup (including integrated play).
+        if (FMLEnvironment.dist == Dist.DEDICATED_SERVER) {
+            registrar.playToClient(MFPlayerSkinSyncPayload.TYPE,
+                    MFPlayerSkinSyncPayload.STREAM_CODEC,
+                    (payload, context) -> {});
+            registrar.playToClient(MFManagementSnapshotPayload.TYPE,
+                    MFManagementSnapshotPayload.STREAM_CODEC,
+                    (payload, context) -> {});
+        }
     }
 
     private static void handleManagementRequest(MFManagementRequestPayload payload, IPayloadContext context) {
