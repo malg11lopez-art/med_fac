@@ -90,40 +90,40 @@ public final class MFAdvancedCommands {
     /** Server-authoritative tactical battles and strategic army columns. */
     private static LiteralArgumentBuilder<CommandSourceStack> warfareCommands() {
         var command = Commands.literal("warfare").requires(source -> source.hasPermission(2));
-        command.then(Commands.literal("battle").then(Commands.literal("create")
-                .then(Commands.argument("attacker_faction", StringArgumentType.word())
-                .then(Commands.argument("defender_faction", StringArgumentType.word())
-                .then(Commands.argument("units_each", IntegerArgumentType.integer(1, 16)).executes(ctx -> {
-                    UUID attacker = uuid(ctx, "attacker_faction");
-                    UUID defender = uuid(ctx, "defender_faction");
-                    int each = IntegerArgumentType.getInteger(ctx, "units_each");
-                    var factions = MFFactionSavedData.get(ctx.getSource().getServer());
-                    if (attacker == null || defender == null || attacker.equals(defender)
-                            || factions.getFaction(attacker).isEmpty() || factions.getFaction(defender).isEmpty()) {
-                        ctx.getSource().sendFailure(Component.literal("Batalla rechazada: las dos facciones deben existir y ser distintas."));
-                        return 0;
-                    }
-                    UUID battleId = UUID.randomUUID();
-                    List<com.medievalfactions.domain.MFTacticalWarfare.Unit> units = new ArrayList<>();
-                    for (int i = 0; i < each; i++) {
-                        units.add(new com.medievalfactions.domain.MFTacticalWarfare.Unit(
-                                UUID.randomUUID(), attacker, i % 4, i / 4, 100, 100, 6, 18, 2,
-                                75, 75, 2, com.medievalfactions.domain.MFTacticalWarfare.Stance.READY, false));
-                        units.add(new com.medievalfactions.domain.MFTacticalWarfare.Unit(
-                                UUID.randomUUID(), defender, 8 + i % 4, i / 4, 100, 100, 8, 15, 2,
-                                80, 80, 2, com.medievalfactions.domain.MFTacticalWarfare.Stance.READY, false));
-                    }
-                    var battle = new com.medievalfactions.domain.MFTacticalWarfare.Battle(
-                            battleId, attacker, defender, attacker, 1, units,
-                            com.medievalfactions.domain.MFTacticalWarfare.BattleStatus.ACTIVE, null);
-                    boolean stored = MFAdvancedSavedData.get(ctx.getSource().getServer())
-                            .storeSimulationRecord("tactical_battles", battleId, battle,
-                                    com.medievalfactions.domain.MFTacticalWarfare.Battle.class);
-                    if (!stored) { ctx.getSource().sendFailure(Component.literal("No se pudo persistir el combate táctico.")); return 0; }
-                    ctx.getSource().sendSuccess(() -> Component.literal("Batalla creada: " + battleId
-                            + " | unidades por bando " + each + " | turno de la facción atacante."), true);
-                    return 1;
-                })))));
+        var unitsEach = Commands.argument("units_each", IntegerArgumentType.integer(1, 16)).executes(ctx -> {
+            UUID attacker = uuid(ctx, "attacker_faction");
+            UUID defender = uuid(ctx, "defender_faction");
+            int each = IntegerArgumentType.getInteger(ctx, "units_each");
+            var factions = MFFactionSavedData.get(ctx.getSource().getServer());
+            if (attacker == null || defender == null || attacker.equals(defender)
+                    || factions.getFaction(attacker).isEmpty() || factions.getFaction(defender).isEmpty()) {
+                ctx.getSource().sendFailure(Component.literal("Batalla rechazada: las dos facciones deben existir y ser distintas."));
+                return 0;
+            }
+            UUID battleId = UUID.randomUUID();
+            List<com.medievalfactions.domain.MFTacticalWarfare.Unit> units = new ArrayList<>();
+            for (int i = 0; i < each; i++) {
+                units.add(new com.medievalfactions.domain.MFTacticalWarfare.Unit(
+                        UUID.randomUUID(), attacker, i % 4, i / 4, 100, 100, 6, 18, 2,
+                        75, 75, 2, com.medievalfactions.domain.MFTacticalWarfare.Stance.READY, false));
+                units.add(new com.medievalfactions.domain.MFTacticalWarfare.Unit(
+                        UUID.randomUUID(), defender, 8 + i % 4, i / 4, 100, 100, 8, 15, 2,
+                        80, 80, 2, com.medievalfactions.domain.MFTacticalWarfare.Stance.READY, false));
+            }
+            var battle = new com.medievalfactions.domain.MFTacticalWarfare.Battle(
+                    battleId, attacker, defender, attacker, 1, units,
+                    com.medievalfactions.domain.MFTacticalWarfare.BattleStatus.ACTIVE, null);
+            boolean stored = MFAdvancedSavedData.get(ctx.getSource().getServer())
+                    .storeSimulationRecord("tactical_battles", battleId, battle,
+                            com.medievalfactions.domain.MFTacticalWarfare.Battle.class);
+            if (!stored) { ctx.getSource().sendFailure(Component.literal("No se pudo persistir el combate táctico.")); return 0; }
+            ctx.getSource().sendSuccess(() -> Component.literal("Batalla creada: " + battleId
+                    + " | unidades por bando " + each + " | turno de la facción atacante."), true);
+            return 1;
+        });
+        var defenderFaction = Commands.argument("defender_faction", StringArgumentType.word()).then(unitsEach);
+        var attackerFaction = Commands.argument("attacker_faction", StringArgumentType.word()).then(defenderFaction);
+        command.then(Commands.literal("battle").then(Commands.literal("create").then(attackerFaction)));
         command.then(Commands.literal("battle").then(Commands.literal("list").executes(ctx -> {
             var battles = MFAdvancedSavedData.get(ctx.getSource().getServer()).records(
                     "tactical_battles", com.medievalfactions.domain.MFTacticalWarfare.Battle.class);
