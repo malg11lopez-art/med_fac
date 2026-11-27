@@ -13,6 +13,8 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
 ## Funciones integradas en esta alpha
 
+**Cosecha autónoma inicial (fase 8, en validación):** agricultores cosechan trigo, zanahorias, patatas y remolacha maduros en su waypoint de trabajo, replantan el cultivo y acreditan el producto al almacén del asentamiento. Incluye un GameTest NeoForge. La CI #120 fue cancelada durante la compilación, por lo que no se considera integrada ni validada en `main`.
+
 **Sincronización de skins:** 86 skins, selección persistente por jugador y sincronización servidor-cliente con actualización al entrar, respawnear y desconectarse. Compilada y validada estáticamente; falta una sesión real de dos clientes y todavía no se aplica a NPC.
 
 **Audio:** 75 SoundEvents y 75 OGG validados, con referencias detectadas en keyframes o código de gameplay. Se han añadido disparadores para pasos, espada, parry, armadura, puertas, crafting, fundición, ambientes, progreso, caballo y habilidades. El cliente headless no acredita mezcla ni escucha humana.
