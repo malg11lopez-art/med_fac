@@ -252,6 +252,44 @@ public final class MFWorldSavedData extends SavedData {
     }
 
     /**
+     * Credits one physical forestry/mining action and profession XP atomically.
+     * The entity removes the world block first and restores it if this transaction rejects the credit.
+     */
+    public synchronized boolean creditResidentResource(UUID settlementId, UUID citizenId,
+                                                         String itemId, long amount, long professionXp) {
+        MFSettlementState settlement = settlements.get(settlementId);
+        MFCitizenState worker = citizens.get(citizenId);
+        if (settlement == null || worker == null || !settlement.id().equals(worker.settlementId())
+                || !settlement.factionId().equals(worker.factionId())
+                || worker.status() != CitizenStatus.ACTIVE
+                || worker.ageStage() == AgeStage.BABY || worker.ageStage() == AgeStage.CHILD
+                || amount <= 0L || amount > 16L || professionXp <= 0L || professionXp > 1_000L
+                || !settlement.canAccept(itemId, amount)) return false;
+        boolean log = itemId.matches("minecraft:[a-z_]+_(log|wood|stem|hyphae)");
+        boolean ore = Set.of("minecraft:coal", "minecraft:raw_iron", "minecraft:raw_copper",
+                "minecraft:raw_gold", "minecraft:diamond", "minecraft:emerald",
+                "minecraft:lapis_lazuli", "minecraft:redstone").contains(itemId);
+        if ((worker.profession() == Profession.LUMBERJACK && !log)
+                || ((worker.profession() == Profession.MINER || worker.profession() == Profession.PROSPECTOR)
+                    && !ore)
+                || (worker.profession() != Profession.LUMBERJACK
+                    && worker.profession() != Profession.MINER
+                    && worker.profession() != Profession.PROSPECTOR)) return false;
+        LinkedHashMap<String, Long> nextStock = new LinkedHashMap<>(settlement.inventory());
+        MFCitizenState nextWorker;
+        try {
+            nextStock.merge(itemId, amount, Math::addExact);
+            nextWorker = worker.awardProfessionXp(professionXp);
+        } catch (ArithmeticException ex) {
+            return false;
+        }
+        settlements.put(settlementId, settlement.withInventory(nextStock));
+        citizens.put(citizenId, nextWorker);
+        setDirty();
+        return true;
+    }
+
+    /**
      * Atomically consumes one seed from a farmer's own settlement store.
      * The caller debits before placement and refunds the seed if the world edit fails.
      */

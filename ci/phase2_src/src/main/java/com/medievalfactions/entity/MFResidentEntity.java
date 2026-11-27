@@ -35,6 +35,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
     private String activeActionTrigger;
     private long lastSocialInteractionTick = -1L;
     private long lastMealTick = -1L;
+    private long lastResourceWorkTick = -1L;
 
     public MFResidentEntity(EntityType<? extends MFResidentEntity> type, Level level) { super(type, level); }
 
@@ -174,6 +175,10 @@ public final class MFResidentEntity extends MFAnimatedMob {
                                 worldData, citizenId, stationBelow, worldData.simulatedDays());
                     }
                     workActionCompleted = started.isPresent();
+                    if (!workActionCompleted) {
+                        workActionTrigger = performPhysicalResourceWork(serverLevel, worldData, citizen, target);
+                        workActionCompleted = workActionTrigger != null;
+                    }
                 }
             }
             boolean eatActionCompleted = false;
@@ -209,6 +214,64 @@ public final class MFResidentEntity extends MFAnimatedMob {
             getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
             lastNavigationTarget = target;
         }
+    }
+
+    /**
+     * Performs one visible forestry/mining action at the resident's assigned worksite.
+     * Only loaded blocks in a tiny work radius are considered; no chunk loads or bulk edits occur.
+     */
+    private String performPhysicalResourceWork(ServerLevel level, MFWorldSavedData worldData,
+                                                MFCitizenState citizen, BlockPos worksite) {
+        if (level == null || worldData == null || citizen == null || worksite == null
+                || (citizen.profession() != Profession.LUMBERJACK
+                    && citizen.profession() != Profession.MINER
+                    && citizen.profession() != Profession.PROSPECTOR)) return null;
+        long now = level.getGameTime();
+        if (lastResourceWorkTick >= 0L && now >= lastResourceWorkTick
+                && now - lastResourceWorkTick < 40L) return null;
+        for (int dy = 1; dy >= -1; dy--) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    BlockPos candidate = worksite.offset(dx, dy, dz);
+                    if (!level.hasChunkAt(candidate)) continue;
+                    var state = level.getBlockState(candidate);
+                    String path = BuiltInRegistries.BLOCK.getKey(state.getBlock()).getPath();
+                    boolean log = state.is(net.minecraft.tags.BlockTags.LOGS);
+                    String itemId = null;
+                    if (citizen.profession() == Profession.LUMBERJACK && log) {
+                        itemId = "minecraft:" + path;
+                    } else if ((citizen.profession() == Profession.MINER
+                            || citizen.profession() == Profession.PROSPECTOR) && path.endsWith("_ore")) {
+                        if (path.contains("coal_ore")) itemId = "minecraft:coal";
+                        else if (path.contains("iron_ore")) itemId = "minecraft:raw_iron";
+                        else if (path.contains("copper_ore")) itemId = "minecraft:raw_copper";
+                        else if (path.contains("gold_ore")) itemId = "minecraft:raw_gold";
+                        else if (path.contains("diamond_ore")) itemId = "minecraft:diamond";
+                        else if (path.contains("emerald_ore")) itemId = "minecraft:emerald";
+                        else if (path.contains("lapis_ore")) itemId = "minecraft:lapis_lazuli";
+                        else if (path.contains("redstone_ore")) itemId = "minecraft:redstone";
+                    }
+                    if (itemId == null) continue;
+                    if (!level.setBlock(candidate, Blocks.AIR.defaultBlockState(), 3)) continue;
+                    if (!worldData.creditResidentResource(citizen.settlementId(), citizen.id(),
+                            itemId, 1L, 8L)) {
+                        level.setBlock(candidate, state, 3);
+                        continue;
+                    }
+                    lastResourceWorkTick = now;
+                    level.playSound(null, candidate, log
+                                    ? net.minecraft.sounds.SoundEvents.WOOD_BREAK
+                                    : net.minecraft.sounds.SoundEvents.STONE_BREAK,
+                            net.minecraft.sounds.SoundSource.BLOCKS, 0.62F,
+                            0.94F + level.random.nextFloat() * 0.12F);
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                            candidate.getX() + 0.5D, candidate.getY() + 0.7D, candidate.getZ() + 0.5D,
+                            2, 0.16D, 0.14D, 0.16D, 0.01D);
+                    return log ? "chop_wood" : "mine";
+                }
+            }
+        }
+        return null;
     }
 
     private static boolean plantCropOnFarmland(ServerLevel level, MFWorldSavedData worldData,
@@ -346,6 +409,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
         tag.putInt("mf_visual_role", visualRole());
         tag.putLong("mf_last_social_tick", lastSocialInteractionTick);
         tag.putLong("mf_last_meal_tick", lastMealTick);
+        tag.putLong("mf_last_resource_work_tick", lastResourceWorkTick);
     }
 
     @Override public void readAdditionalSaveData(CompoundTag tag) {
@@ -364,5 +428,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
                 ? tag.getLong("mf_last_social_tick") : -1L;
         lastMealTick = tag.contains("mf_last_meal_tick", net.minecraft.nbt.Tag.TAG_LONG)
                 ? tag.getLong("mf_last_meal_tick") : -1L;
+        lastResourceWorkTick = tag.contains("mf_last_resource_work_tick", net.minecraft.nbt.Tag.TAG_LONG)
+                ? tag.getLong("mf_last_resource_work_tick") : -1L;
     }
 }
