@@ -40,7 +40,8 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 4. Selección de objetivos mediante ray tracing de entidades limitado por la primera colisión de bloque.
 5. Panel O con accesos a comandos existentes; CI comprueba la tecla y los comandos de destino.
 6. Lookup indexado de ciudadano por UUID para reducir trabajo repetido por entidad residente.
-7. Documentación de estado, matriz de cobertura, puertas de calidad y plan de implementación actualizadas dentro del ZIP de fuentes.\n8. GameTest de serialización/recarga de los 31 buckets avanzados y GameTest de aislamiento de registros corruptos; CI también verifica la acción de planificación de la GUI y el inicio real de una receta al llegar un residente a una estación física (CI #126).
+7. Documentación de estado, matriz de cobertura, puertas de calidad y plan de implementación actualizadas dentro del ZIP de fuentes.
+8. GameTest de serialización/recarga de los 31 buckets avanzados y GameTest de aislamiento de registros corruptos; CI también verifica la acción de planificación de la GUI y el inicio real de una receta al llegar un residente a una estación física (CI #126).
 
 ## Limitaciones y trabajo no demostrado
 
