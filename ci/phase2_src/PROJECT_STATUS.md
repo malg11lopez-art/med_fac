@@ -80,7 +80,7 @@ Los parámetros exactos y precondiciones se describen en `README_ES.md`.
 
 - Partida de Minecraft con dos clientes, skin remota visible y sincronización durante cambios de dimensión.
 - Escucha humana de los 75 sonidos, mezcla, espacialización y sincronía real.
-- Round-trip NBT real de todos los buckets nuevos, migraciones y reinicio de mundo.
+- Partidas históricas reales de cada versión anterior, reinicios de mundo y migraciones entre versiones publicadas; CI #126 sí cubre un registro por cada uno de los 31 buckets avanzados y la recuperación de cuatro clases de entrada corrupta.
 - Rendimiento prolongado y profiling con población alta.
 
 Dictamen: v0.9.1-alpha compila y arranca en CI y ya contiene nuevas integraciones de gameplay; no implementa todavía todas las verticales del Documento Maestro ni se considera release final.
@@ -94,3 +94,14 @@ Dictamen: v0.9.1-alpha compila y arranca en CI y ya contiene nuevas integracione
 - El build, el arranque del servidor y cliente, y el smoke test de conexión/sincronización multijugador pasan.
 
 Estos checks cubren la capa de simulación y persistencia. No certifican todavía la interacción de trabajadores con estaciones físicas ni el comportamiento social autónomo.
+
+
+## Validación adicional — CI #126
+
+- Ocho GameTests NeoForge pasan en el servidor de pruebas.
+- Un registro de cada uno de los 31 buckets avanzados sobrevive a un round-trip mediante CompoundTag real y Gson, conservando UUID y contenido.
+- Un JSON inválido, un JSON de más de 32.000 caracteres, una entrada sin UUID y una entrada con UUID duplicado se descartan sin perder el registro válido vecino.
+- Se mantienen los tests de producción que reanudan una orden tras NBT, asignación de trabajo, llegada a estación física y verificación de acciones de gestión.
+- El build, el arranque del servidor y cliente, y el smoke test de conexión/sincronización multijugador pasan; el JAR se publica como artefacto de CI.
+
+La cobertura por registro no sustituye todavía pruebas de volúmenes máximos, presupuesto agregado de 64 MB, interrupción durante guardado ni migración de mundos publicados anteriores.
