@@ -179,6 +179,8 @@ public final class MFResidentEntity extends MFAnimatedMob {
                     if (!workActionCompleted) {
                         if (citizen.profession() == Profession.FISHER) {
                             workActionTrigger = performFishingWork(serverLevel, worldData, citizen, target);
+                        } else if (citizen.profession() == Profession.SHEPHERD) {
+                            workActionTrigger = performShepherdWork(serverLevel, worldData, citizen, target);
                         } else {
                             workActionTrigger = performPhysicalResourceWork(serverLevel, worldData, citizen, target);
                         }
@@ -277,6 +279,33 @@ public final class MFResidentEntity extends MFAnimatedMob {
             }
         }
         return null;
+    }
+
+    /**
+     * Searches nearby loaded entities and shears one adult, unshorn sheep.
+     * Inventory credit is validated before changing the animal.
+     */
+    private String performShepherdWork(ServerLevel level, MFWorldSavedData worldData,
+                                       MFCitizenState citizen, BlockPos worksite) {
+        if (level == null || worldData == null || citizen == null || worksite == null
+                || citizen.profession() != Profession.SHEPHERD) return null;
+        long now = level.getGameTime();
+        if (lastProfessionWorkTick >= 0L && now >= lastProfessionWorkTick
+                && now - lastProfessionWorkTick < 200L) return null;
+        var sheep = level.getEntitiesOfClass(net.minecraft.world.entity.animal.Sheep.class,
+                new net.minecraft.world.phys.AABB(worksite).inflate(4.0D),
+                animal -> animal.isAlive() && !animal.isBaby() && animal.readyForShearing());
+        var target = sheep.stream().min(java.util.Comparator.comparingDouble(
+                animal -> animal.distanceToSqr(worksite.getX() + 0.5D, worksite.getY() + 0.5D, worksite.getZ() + 0.5D)))
+                .orElse(null);
+        if (target == null) return null;
+        String woolId = "minecraft:" + target.getColor().getName() + "_wool";
+        if (!worldData.creditResidentWool(citizen.settlementId(), citizen.id(), woolId, 1L, 10L)) return null;
+        target.shear(net.minecraft.sounds.SoundSource.BLOCKS);
+        lastProfessionWorkTick = now;
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
+                target.getX(), target.getY() + 0.8D, target.getZ(), 4, 0.22D, 0.18D, 0.22D, 0.02D);
+        return "shear";
     }
 
     /**
