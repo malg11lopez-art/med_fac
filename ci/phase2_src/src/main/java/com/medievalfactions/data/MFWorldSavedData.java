@@ -251,6 +251,38 @@ public final class MFWorldSavedData extends SavedData {
         return true;
     }
 
+    /**
+     * Applies one nearby social interaction to two active residents in the same settlement.
+     * Both satisfaction updates are committed together; cross-settlement interactions are rejected.
+     */
+    public synchronized boolean socializeCitizens(UUID firstId, UUID secondId, int satisfactionGain) {
+        if (firstId == null || secondId == null || firstId.equals(secondId)
+                || satisfactionGain < 1 || satisfactionGain > 10) return false;
+        MFCitizenState first = citizens.get(firstId);
+        MFCitizenState second = citizens.get(secondId);
+        if (first == null || second == null || first.status() != CitizenStatus.ACTIVE
+                || second.status() != CitizenStatus.ACTIVE
+                || !first.settlementId().equals(second.settlementId())
+                || !first.factionId().equals(second.factionId())
+                || !settlements.containsKey(first.settlementId())
+                || (first.satisfaction() >= 100 && second.satisfaction() >= 100)) return false;
+
+        MFCitizenState updatedFirst = withSocialSatisfaction(first, satisfactionGain);
+        MFCitizenState updatedSecond = withSocialSatisfaction(second, satisfactionGain);
+        citizens.put(firstId, updatedFirst);
+        citizens.put(secondId, updatedSecond);
+        setDirty();
+        return true;
+    }
+
+    private static MFCitizenState withSocialSatisfaction(MFCitizenState citizen, int gain) {
+        return new MFCitizenState(citizen.id(), citizen.factionId(), citizen.settlementId(), citizen.name(),
+                citizen.race(), citizen.profession(), citizen.ageStage(), citizen.status(), citizen.health(),
+                citizen.hunger(), Math.min(100, citizen.satisfaction() + gain), citizen.dailyWageCopper(),
+                citizen.purseCopper(), citizen.unpaidDays(), citizen.ageDays(), citizen.professionLevel(),
+                citizen.professionXp(), citizen.professionPotential());
+    }
+
     public synchronized boolean adjustSettlementTreasury(UUID settlementId, long deltaCopper) {
         MFSettlementState current = settlements.get(settlementId);
         if (current == null) return false;

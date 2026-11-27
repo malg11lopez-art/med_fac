@@ -660,6 +660,46 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void residentSocializationImprovesBothCitizensAtomically(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        var factions = MFFactionSavedData.get(server);
+        var world = MFWorldSavedData.get(server);
+        var faction = factions.createFaction("Social Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create social test faction"));
+        var firstSettlement = world.createSettlement(faction.id(), "Friendly Village")
+                .orElseThrow(() -> new AssertionError("Could not create first social settlement"));
+        var secondSettlement = world.createSettlement(faction.id(), "Distant Village")
+                .orElseThrow(() -> new AssertionError("Could not create second social settlement"));
+
+        MFCitizenState first = MFCitizenState.create(faction.id(), firstSettlement.id(), "Ari",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FARMER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        MFCitizenState second = MFCitizenState.create(faction.id(), firstSettlement.id(), "Bram",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.CARPENTER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        MFCitizenState distant = MFCitizenState.create(faction.id(), secondSettlement.id(), "Cora",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.BAKER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(first, faction.primaryRace()), "Could not add first social resident");
+        helper.assertTrue(world.addCitizen(second, faction.primaryRace()), "Could not add second social resident");
+        helper.assertTrue(world.addCitizen(distant, faction.primaryRace()), "Could not add distant resident");
+
+        helper.assertTrue(world.socializeCitizens(first.id(), second.id(), 1),
+                "Nearby residents in one settlement should be able to socialize");
+        helper.assertTrue(world.citizen(first.id()).map(c -> c.satisfaction() == 66).orElse(false),
+                "First resident did not receive the social satisfaction gain");
+        helper.assertTrue(world.citizen(second.id()).map(c -> c.satisfaction() == 66).orElse(false),
+                "Second resident did not receive the social satisfaction gain");
+        helper.assertTrue(!world.socializeCitizens(first.id(), distant.id(), 1),
+                "Residents in different settlements must not receive a social interaction");
+        helper.assertTrue(world.citizen(distant.id()).map(c -> c.satisfaction() == 65).orElse(false),
+                "Rejected cross-settlement interaction changed the distant resident");
+        helper.assertTrue(!world.socializeCitizens(first.id(), first.id(), 1),
+                "A resident cannot socialize with itself");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 80)
     public static void residentFarmerHarvestsMatureCropIntoSettlementStock(GameTestHelper helper) {
         var level = helper.getLevel();
