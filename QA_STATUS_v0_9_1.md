@@ -21,7 +21,10 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 | Referencias de audio en keyframes/runtime | 75/75 según auditor estático |
 | Sincronización de skins | 86/86 texturas, 14/14 checks |
 | Pruebas de dominio | 276 aserciones PASS |
-| SavedData stub smoke test | PASS |\n| SavedData avanzado real NBT/JSON | 31/31 buckets tipados con round-trip GameTest |\n| Compatibilidad de esquemas SavedData | 12/12 checks estáticos + pruebas runtime de esquemas antiguos/futuros/malformados |
+| SavedData stub smoke test | PASS |
+| SavedData avanzado real NBT/JSON | 31/31 buckets tipados con round-trip GameTest |
+| Recuperación de datos corruptos | JSON inválido, registro >32.000 chars, UUID ausente y UUID duplicado aislados; registro válido conservado |
+| Compatibilidad de esquemas SavedData | 12/12 checks estáticos + pruebas runtime de esquemas antiguos/futuros/malformados |
 | Gradle clean test build | PASS |
 | NeoForge GameTests | 8/8 pruebas obligatorias PASS |
 | Descriptor/JAR versión 0.9.1-alpha | PASS |
