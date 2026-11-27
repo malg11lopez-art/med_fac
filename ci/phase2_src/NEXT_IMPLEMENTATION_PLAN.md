@@ -46,6 +46,8 @@ Este plan prioriza dependencias reales y entregas comprobables. Una mecánica so
 
 ## P2 — IA integral de ciudadanos
 
+- [ ] Fase 8 en validación: cosecha física inicial por agricultores de cultivos vanilla maduros, replantación y abono al inventario del asentamiento. GameTest añadido; CI #120 fue cancelada antes de terminar compilación y requiere reejecución completa.
+
 1. Conectar el A* 3D al mundo (colisión, suelo, puertas, escalera, agua, peligros y chunks) o retirar ese A* si se decide usar navegación vanilla; no mantener dos caminos contradictorios.
 2. [x] Asignación autónoma inicial de recetas por profesión desde el ciclo diario, con comprobación de stock y reserva atómica de ingredientes (GameTest real CI #90).
 3. [x] Exigir estación física compatible en el waypoint del residente antes de reservar ingredientes e iniciar una de las recetas iniciales (GameTest real CI de fase 5).
