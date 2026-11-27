@@ -51,6 +51,19 @@ public final class MFPlayerSkinServerNetwork {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
             int page = payload.page();
+            var persistent = player.getPersistentData();
+            long now = player.serverLevel().getGameTime();
+            if (persistent.contains(MFManagementAccessRules.LAST_REQUEST_TICK_KEY, Tag.TAG_LONG)
+                    && !MFManagementAccessRules.mayRequest(now,
+                    persistent.getLong(MFManagementAccessRules.LAST_REQUEST_TICK_KEY))) return;
+            persistent.putLong(MFManagementAccessRules.LAST_REQUEST_TICK_KEY, now);
+
+            if (!MFManagementAccessRules.canViewGlobalDashboard(player.hasPermissions(2))) {
+                PacketDistributor.sendToPlayer(player, new MFManagementSnapshotPayload(page,
+                        "Acceso restringido",
+                        "El panel actual muestra datos globales del mundo y requiere permisos de operador (nivel 2)."));
+                return;
+            }
             String body = MFManagementDashboard.render(player, page);
             PacketDistributor.sendToPlayer(player,
                     new MFManagementSnapshotPayload(page, MFManagementDashboard.title(page), body));
