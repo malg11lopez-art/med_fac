@@ -63,4 +63,4 @@ else:
 
 if failed:
     raise SystemExit("SavedData schema verification failed: " + ", ".join(failed))
-print(f"SavedData schema compatibility: {len(checks) + 4}/{len(checks) + 4} checks passed.")
+print(f"SavedData schema compatibility: {len(checks) + 6}/{len(checks) + 6} checks passed.")
