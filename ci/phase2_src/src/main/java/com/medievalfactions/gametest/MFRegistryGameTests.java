@@ -27,6 +27,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Blocks;
@@ -582,6 +583,58 @@ public final class MFRegistryGameTests {
         if (expected == null) return false;
         Class<Object> type = (Class<Object>) expected.getClass();
         return data.record(bucket, id, type).map(expected::equals).orElse(false);
+    }
+
+
+    /**
+     * Corrupt advanced records are isolated: valid neighbours survive while malformed,
+     * oversized, missing-ID and duplicate-ID entries are discarded independently.
+     */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void advancedSavedDataSkipsCorruptRecordsWithoutLosingValidOnes(GameTestHelper helper) {
+        MFAdvancedSavedData source = new MFAdvancedSavedData();
+        UUID validId = UUID.randomUUID();
+        var valid = new MFAdvancedSystems.NpcDirective(validId,
+                MFAdvancedSystems.NpcIntent.WORK, 65, 3L, "Valid record survives");
+        helper.assertTrue(source.storeSimulationRecord("npc_directives", validId, valid,
+                        MFAdvancedSystems.NpcDirective.class),
+                "Could not create the valid control record");
+
+        CompoundTag saved = source.save(new CompoundTag(), helper.getLevel().registryAccess());
+        CompoundTag root = saved.getCompound("advanced_records");
+        var records = root.getList("npc_directives", Tag.TAG_COMPOUND);
+        helper.assertTrue(records.size() == 1, "Expected exactly one valid control record before corruption injection");
+        String validJson = records.getCompound(0).getString("json");
+
+        CompoundTag malformedJson = new CompoundTag();
+        malformedJson.putUUID("id", UUID.randomUUID());
+        malformedJson.putString("json", "{ this is not valid JSON");
+        records.add(malformedJson);
+
+        CompoundTag oversized = new CompoundTag();
+        oversized.putUUID("id", UUID.randomUUID());
+        oversized.putString("json", "x".repeat(32_001));
+        records.add(oversized);
+
+        CompoundTag missingId = new CompoundTag();
+        missingId.putString("json", validJson);
+        records.add(missingId);
+
+        CompoundTag duplicateId = new CompoundTag();
+        duplicateId.putUUID("id", validId);
+        duplicateId.putString("json", validJson);
+        records.add(duplicateId);
+
+        root.put("npc_directives", records);
+        saved.put("advanced_records", root);
+        MFAdvancedSavedData restored = MFAdvancedSavedData.load(saved, helper.getLevel().registryAccess());
+
+        helper.assertTrue(restored.count("npc_directives") == 1,
+                "Malformed, oversized, missing-ID or duplicate-ID entries were not isolated");
+        helper.assertTrue(restored.record("npc_directives", validId, MFAdvancedSystems.NpcDirective.class)
+                        .map(valid::equals).orElse(false),
+                "A valid advanced record was lost while neighbouring corrupt records were discarded");
+        helper.succeed();
     }
 
     private static boolean rejectsSchema(Runnable loader) {
