@@ -93,6 +93,20 @@ else:
 
 
 
+# Overlay the audited server networking implementation into the canonical ZIP build.
+# The phase2 snapshot is a source overlay, not just a QA export: this keeps the
+# network payload declarations that were added after the original v0.9.0 archive.
+server_network_overlay = (
+    Path(__file__).resolve().parent
+    / "phase2_src/src/main/java/com/medievalfactions/network/MFPlayerSkinServerNetwork.java"
+)
+server_network_target = root / "network/MFPlayerSkinServerNetwork.java"
+if not server_network_overlay.is_file():
+    raise SystemExit("Missing server networking source overlay")
+server_network_target.parent.mkdir(parents=True, exist_ok=True)
+server_network_target.write_text(server_network_overlay.read_text(encoding="utf-8"), encoding="utf-8")
+print("Applied serverbound and clientbound payload registration overlay")
+
 # Add the operator-only preview command for all 75 registered SoundEvents.
 overlay_sound = Path(__file__).resolve().parent / "overlays/MFSoundPreview.java"
 preview_target = root / "registry/MFSoundPreview.java"
