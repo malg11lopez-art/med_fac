@@ -171,7 +171,7 @@ public final class MFWorldEvents {
             }
         }
         if (target instanceof WitherBoss wither && wither.getPersistentData().hasUUID("mf_boss_encounter")) {
-            var advanced = MFAdvancedSavedData.get(wither.serverLevel().getServer());
+            var advanced = MFAdvancedSavedData.get(((ServerLevel) wither.level()).getServer());
             java.util.UUID encounterId = wither.getPersistentData().getUUID("mf_boss_encounter");
             var encounter = advanced.record("boss_encounters", encounterId,
                     com.medievalfactions.domain.MFAdventureSystems.BossEncounter.class).orElse(null);

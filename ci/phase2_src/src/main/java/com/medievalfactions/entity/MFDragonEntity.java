@@ -79,14 +79,14 @@ public final class MFDragonEntity extends MFAnimatedMob {
         var area = getBoundingBox().expandTowards(direction.scale(BREATH_RANGE)).inflate(2.0D, 1.5D, 2.0D);
         int hits = 0;
         for (Monster victim : level().getEntitiesOfClass(Monster.class, area,
-                candidate -> candidate != this && candidate.isAlive())) {
+                Monster::isAlive)) {
             Vec3 toVictim = victim.getEyePosition().subtract(origin);
             double distance = toVictim.length();
             if (distance < 1.0D || distance > BREATH_RANGE || direction.dot(toVictim.normalize()) < BREATH_CONE_DOT
                     || !hasLineOfSight(victim)) continue;
             float damage = (float) Math.max(4.0D, 12.0D - distance * 0.35D);
             if (victim.hurt(damageSources().mobAttack(this), damage)) {
-                victim.setSecondsOnFire(4);
+                victim.setRemainingFireTicks(Math.max(victim.getRemainingFireTicks(), 80));
                 serverLevel.sendParticles(ParticleTypes.FLAME, victim.getX(), victim.getY() + 0.7D, victim.getZ(),
                         10, 0.35D, 0.45D, 0.35D, 0.02D);
                 hits++;

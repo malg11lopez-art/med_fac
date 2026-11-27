@@ -181,12 +181,12 @@ public final class MFAdvancedCommands {
                 ctx.getSource().sendFailure(Component.literal("Columna rechazada: comandante de la facción, formación, efectivos o provisiones inválidos."));
                 return 0;
             }
-            BlockPos target = BlockPosArgument.getLoadedBlockPos(ctx, "destination");
+            BlockPos destinationPos = BlockPosArgument.getLoadedBlockPos(ctx, "destination");
             BlockPos origin = player.blockPosition();
             String dimension = player.serverLevel().dimension().location().toString();
             List<MFCitizenSimulation.Waypoint> route = List.of(
                     new MFCitizenSimulation.Waypoint(dimension, origin.getX(), origin.getY(), origin.getZ()),
-                    new MFCitizenSimulation.Waypoint(dimension, target.getX(), target.getY(), target.getZ()));
+                    new MFCitizenSimulation.Waypoint(dimension, destinationPos.getX(), destinationPos.getY(), destinationPos.getZ()));
             int trackedUnits = Math.min(256, troopCount);
             List<UUID> unitIds = new ArrayList<>(trackedUnits);
             for (int i=0;i<trackedUnits;i++) unitIds.add(UUID.randomUUID());
@@ -277,8 +277,13 @@ public final class MFAdvancedCommands {
             var data = MFAdvancedSavedData.get(ctx.getSource().getServer());
             var link = data.record("boss_entities", id, com.medievalfactions.domain.MFAdventureSystems.BossEntityLink.class).orElse(null);
             if (link == null) { ctx.getSource().sendFailure(Component.literal("No existe el jefe físico vinculado a ese encuentro.")); return 0; }
-            var level = ctx.getSource().getServer().getAllLevels().stream()
-                    .filter(l -> l.dimension().location().toString().equals(link.dimension())).findFirst().orElse(null);
+            ServerLevel level = null;
+            for (ServerLevel candidateLevel : ctx.getSource().getServer().getAllLevels()) {
+                if (candidateLevel.dimension().location().toString().equals(link.dimension())) {
+                    level = candidateLevel;
+                    break;
+                }
+            }
             Entity entity = level == null ? null : level.getEntity(link.entityId());
             if (!(entity instanceof WitherBoss physical) || !physical.isAlive()) {
                 ctx.getSource().sendFailure(Component.literal("La entidad del jefe no está cargada o ha sido derrotada."));

@@ -6,6 +6,7 @@ import com.medievalfactions.domain.MFAdvancedSystems;
 import com.medievalfactions.domain.MFCitizenState;
 import com.medievalfactions.domain.MFGameCatalog;
 import com.medievalfactions.domain.MFSettlementState;
+import com.medievalfactions.domain.MFWorkOrderState;
 import com.medievalfactions.domain.MFPopulationIndex;
 import com.medievalfactions.domain.MFRaceBiology;
 import com.medievalfactions.domain.MFRecipeCatalog;
