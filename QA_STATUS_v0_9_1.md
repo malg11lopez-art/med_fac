@@ -1,8 +1,8 @@
 # Auditoría general — MEDIEVAL FACTIONS v0.9.1-alpha
 
 **Fecha:** 27-11-2026  
-**Ejecución:** [GitHub Actions #51 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/45917038330)  
-**Commit:** `98d800e727da23eddb5b1a49b320100b6fbe7a27`  
+**Ejecución:** [GitHub Actions #142 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/46000855445)  
+**Commit:** `2e47da2fd6efa2131de129ed3290beaa931ed90a`  
 **JAR:** `medieval_factions-0.9.1-alpha.jar`  
 **Tamaño:** 1.650.075 bytes  
 **SHA-256:** `5acfc06c96c13aea83b761b9dc04b47a87f679e2fca66385e24a13a6ebd7b88e`
@@ -30,9 +30,9 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 | Arranque de cliente y recarga de recursos | PASS |
 | Artefacto publicado | PASS |
 
-## Fase 8 — cosecha autónoma en validación
+## Fase 8 — cosecha autónoma validada en rama
 
-La rama `feat/phase8-autonomous-crop-harvest` incluye cosecha física por residentes agricultores y un GameTest de integración. La ejecución CI #120 quedó `cancelled` en `gradle clean test build`; GameTests, smoke tests y publicación del JAR fueron omitidos. Esta mejora no forma parte de los resultados acreditados por CI #126 ni se marca integrada en `main`.
+La rama `feat/phase8-autonomous-crop-harvest` implementa cosecha física inicial por residentes agricultores: trigo, zanahorias, patatas y remolacha maduros; replantación; y abono del producto al almacén del asentamiento. El GameTest prepara el cultivo en el mundo NeoForge, asigna el trabajo al residente y verifica la interacción. La ejecución CI #142 pasó compilación, 9 GameTests, verificación del JAR, arranque de servidor dedicado y cliente, conexión real y sincronización de skin. Esta fase sigue pendiente de revisión y merge a `main`.
 
 ## Mejoras funcionales incluidas
 
