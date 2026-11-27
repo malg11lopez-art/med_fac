@@ -962,6 +962,8 @@ public final class MFRegistryGameTests {
                 MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FISHER, 0L, 20,
                 MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
         helper.assertTrue(world.addCitizen(fisher, faction.primaryRace()), "Could not register fisher");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:fishing_rod", 1L),
+                "Could not stock reusable fishing rod");
         BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
         BlockPos water = standing.east();
         helper.assertTrue(level.setBlock(water, Blocks.WATER.defaultBlockState(), 3),
@@ -988,10 +990,30 @@ public final class MFRegistryGameTests {
                 "Fisher did not credit one cod to settlement inventory");
         helper.assertTrue(world.citizen(fisher.id()).map(c -> c.professionXp() == 10L).orElse(false),
                 "Successful fishing did not award exactly ten profession XP");
+        helper.assertTrue(resident.getMainHandItem().is(net.minecraft.world.item.Items.FISHING_ROD),
+                "Fisher must visibly equip the reusable settlement fishing rod");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:fishing_rod", 0L) == 1L,
+                "Reusable fishing rod must remain in settlement stock after work");
         for (int i = 0; i < 20; i++) resident.tick();
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:cod", 0L) == 1L,
                 "Repeated resident ticks duplicated the fish catch");
+
+        var untooledSettlement = world.createSettlement(faction.id(), "Untooled Harbor")
+                .orElseThrow(() -> new AssertionError("Could not create untooled fisher settlement"));
+        MFCitizenState untooledFisher = MFCitizenState.create(faction.id(), untooledSettlement.id(),
+                "Unequipped Fisher", MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FISHER,
+                0L, 20, MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(untooledFisher, faction.primaryRace()),
+                "Could not register untooled fisher");
+        helper.assertTrue(!world.creditResidentFish(untooledSettlement.id(), untooledFisher.id(),
+                        "minecraft:cod", 1L, 10L),
+                "Fisher without a stocked fishing rod must not create fish");
+        helper.assertTrue(world.settlement(untooledSettlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:cod", 0L) == 0L
+                        && world.citizen(untooledFisher.id()).map(c -> c.professionXp() == 0L).orElse(false),
+                "Rejected untooled fishing must not credit output or XP");
         helper.succeed();
     }
 
