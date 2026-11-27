@@ -541,4 +541,150 @@ if dashboard_marker not in validator_text:
     validator_text = validator_text.replace(anchor, anchor + dashboard_check, 1)
     validator_file.write_text(validator_text, encoding="utf-8")
 print("Updated and validated the in-game dashboard status.")
+
+# Refresh in-archive Spanish status docs; historical release notes remain untouched.
+source_readme = project / "README_ES.md"
+readme_text = source_readme.read_text(encoding="utf-8")
+readme_text = readme_text.replace("# MEDIEVAL FACTIONS — Alpha v0.9.0", "# MEDIEVAL FACTIONS — Alpha v0.9.1", 1)
+status_start = readme_text.find("## Estado de esta entrega")
+features_start = readme_text.find("## Novedades de v0.9")
+if status_start < 0 or features_start < 0 or features_start <= status_start:
+    raise SystemExit("README_ES.md status section boundaries are not recognized")
+current_status = """## Estado de esta entrega — v0.9.1-alpha (CI #50)
+
+La compilación CI #50 valida build NeoForge, GameTests, arranque de servidor dedicado, cliente headless y recarga de recursos. Sigue siendo una alpha: estas pruebas no equivalen a una partida manual ni a una certificación audiovisual/multijugador completa.
+
+- 276 aserciones de dominio superadas.
+- 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG validados: 0 errores/advertencias.
+- 86 skins con sincronización servidor-cliente; pendiente probar dos clientes reales y aplicación a NPC.
+- Habilidades elemental_burst y shadow_blink, selección de objetivos con ray tracing de entidades y búsqueda indexada de residentes por UUID.
+- Panel rápido en tecla O; conecta comandos existentes, pero no sustituye la GUI de gestión completa.
+
+La matriz exacta por mecánica está en SYSTEM_COMPLETION_MATRIX.md. La arquitectura está en SIMULATION_ARCHITECTURE.md, las pruebas en TEST_MATRIX.md y el plan restante en NEXT_IMPLEMENTATION_PLAN.md.
+
+"""
+readme_text = readme_text[:status_start] + current_status + readme_text[features_start:]
+install_start = readme_text.find("Desde el directorio del proyecto:")
+if install_start >= 0:
+    readme_text = readme_text[:install_start] + """Con JDK 21 y Gradle 8.12 instalados, ejecuta python tools/validate_assets.py, bash tools/run_domain_tests.sh, bash tools/run_saveddata_stub_tests.sh, gradle --no-daemon clean test build y gradle --no-daemon runGameTestServer.
+
+La integración CI extrae el ZIP, aplica parches de compatibilidad/calidad y ejecuta también los smoke tests del servidor y cliente headless. El proyecto fuente no incluye gradlew; para builds locales reproducibles se recomienda añadir un Gradle Wrapper versionado con checksum.
+
+## Pruebas y calidad
+
+Las 276 aserciones son tests de dominio con JDK 21. CI #50 supera build, GameTests y smoke startup/reload de servidor/cliente. El SavedData smoke test utiliza stubs y no sustituye el round-trip NBT real de todos los tipos. El cliente headless usa audio nulo: valida inicialización y carga de recursos, no renderizado ni escucha humana. No se ha ejecutado una partida manual ni una sesión multijugador de dos clientes.
+
+No usar esta alpha como mod final en un mundo principal sin copia de seguridad. Haz backups antes de actualizar.
+"""
+source_readme.write_text(readme_text, encoding="utf-8")
+
+status_file = project / "PROJECT_STATUS.md"
+status_text = status_file.read_text(encoding="utf-8")
+status_text = status_text.replace("MEDIEVAL FACTIONS v0.9.0-alpha", "MEDIEVAL FACTIONS v0.9.1-alpha", 1)
+status_text = status_text.replace(
+    "## Sistemas heredados",
+    """## Integraciones adicionales de v0.9.1-alpha
+
+- Sincronización servidor-cliente de 86 skins con persistencia por jugador y manejo de login/logout/respawn; falta prueba real de dos clientes y aplicación a NPC.
+- 75/75 sonidos referenciados por keyframes o acciones runtime; la calidad auditiva humana aún necesita prueba manual.
+- Habilidades elemental_burst y shadow_blink, ray tracing de objetivos con obstáculos y panel rápido en tecla O.
+- Búsqueda indexada de ciudadanos por UUID para evitar recorrer toda la población desde cada residente.
+
+## Sistemas heredados""",
+    1
+)
+validation_start = status_text.find("## Validación ejecutada")
+if validation_start < 0:
+    raise SystemExit("PROJECT_STATUS.md validation section was not found")
+status_text = status_text[:validation_start] + """## Validación ejecutada — CI #50
+
+- tools/run_domain_tests.sh: 276 aserciones superadas.
+- tools/run_saveddata_stub_tests.sh: PASS, smoke test limitado a un subconjunto de SavedData.
+- python tools/validate_assets.py: 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG; 0 errores/advertencias.
+- Sincronización de skins: 86/86 texturas y 14 checks estáticos PASS.
+- gradle clean test build: PASS.
+- NeoForge GameTests: PASS.
+- Descriptor del JAR medieval_factions-0.9.1-alpha: PASS.
+- Arranque de servidor dedicado y cliente headless con recarga de recursos: PASS.
+
+## No verificado manualmente
+
+- Partida de Minecraft con dos clientes, skin remota visible y sincronización durante cambios de dimensión.
+- Escucha humana de los 75 sonidos, mezcla, espacialización y sincronía real.
+- Round-trip NBT real de todos los buckets nuevos, migraciones y reinicio de mundo.
+- Rendimiento prolongado y profiling con población alta.
+
+Dictamen: v0.9.1-alpha compila y arranca en CI y ya contiene nuevas integraciones de gameplay; no implementa todavía todas las verticales del Documento Maestro ni se considera release final.
+"""
+status_file.write_text(status_text, encoding="utf-8")
+
+matrix_file = project / "SYSTEM_COMPLETION_MATRIX.md"
+matrix_text = matrix_file.read_text(encoding="utf-8")
+matrix_text = matrix_text.replace("MEDIEVAL FACTIONS v0.9.0-alpha", "MEDIEVAL FACTIONS v0.9.1-alpha", 1)
+matrix_text = matrix_text.replace(
+    "Dashboard textual y comandos de administración/jugador. Los datos del servidor ya están separados en registros de dominio.",
+    "Panel rápido en tecla O con accesos a ficha, talentos, habilidades, compañeros, facciones, calendario, dashboard y selector de skins; los datos del servidor siguen separados en registros de dominio.",
+    1
+)
+matrix_text = matrix_text.replace(
+    "No hay pantallas gráficas para estos sistemas ni menús de gestión completos.",
+    "El panel O es una capa de acceso rápido a comandos; siguen faltando pantallas de gestión completas y contenedores gráficos.",
+    1
+)
+matrix_text = matrix_text.replace("**Pendiente como GUI.**", "**Panel rápido implementado; GUI integral pendiente.**", 1)
+matrix_text = matrix_text.replace(
+    "Seis habilidades iniciales conectadas a acciones del servidor;",
+    "Seis habilidades iniciales más elemental_burst y shadow_blink conectadas a acciones del servidor;",
+    1
+)
+matrix_text = matrix_text.replace(
+    "En v0.9 no se marca ninguna de las nuevas verticales como verificada in-game porque no fue posible ejecutar NeoForge.",
+    "CI #50 ya compila NeoForge, ejecuta GameTests y arranca servidor dedicado y cliente headless. Esto acredita inicialización y recarga de recursos, no una partida manual ni una evaluación visual/auditiva humana.",
+    1
+)
+matrix_text = matrix_text.replace("271 aserciones", "276 aserciones")
+matrix_text = matrix_text.replace(
+    "La persistencia NBT real de todos los nuevos tipos y el arranque NeoForge siguen pendientes.",
+    "La persistencia NBT round-trip de todos los tipos, la sesión de dos clientes y el profiling de población alta siguen pendientes."
+)
+matrix_text = matrix_text.replace("## Cambios transversales de v0.9", "## Cambios transversales de v0.9.1-alpha")
+matrix_text += """
+
+### Cambios transversales verificados en CI #50
+
+- Skins: sincronización servidor-cliente, validación de índices 0..85, persistencia de jugador, carga al entrar/respawnear y limpieza al desconectar. Falta prueba de dos clientes y aplicación a NPC.
+- Audio: 75/75 eventos referenciados por keyframes o runtime; los OGG se validan, pero falta escucha humana y ajuste de mezcla.
+- Habilidades: elemental_burst y shadow_blink integradas con coste/cooldown y validación en servidor.
+- Residentes: consulta indexada de ciudadano por UUID; falta profiling de carga real.
+- Interfaz: panel rápido de tecla O; no equivale a GUI de gestión.
+"""
+matrix_file.write_text(matrix_text, encoding="utf-8")
+
+plan_file = project / "NEXT_IMPLEMENTATION_PLAN.md"
+plan_text = plan_file.read_text(encoding="utf-8")
+plan_text = plan_text.replace("MEDIEVAL FACTIONS v0.9.0-alpha", "MEDIEVAL FACTIONS v0.9.1-alpha", 1)
+plan_text = plan_text.replace("271 aserciones", "276 aserciones")
+plan_text = plan_text.replace(
+    "- [ ] Compilación real NeoForge, GameTests y prueba manual en cliente/servidor.",
+    "- [x] Compilación real NeoForge, GameTests y smoke startup de servidor/cliente headless (CI #50).\n- [ ] Partida manual, audio/animaciones visuales y sesión de dos clientes."
+)
+p0_start = plan_text.find("## P0 — Plataforma y compilación reproducible (bloqueante)")
+p1_start = plan_text.find("## P1 — Contratos de datos y seguridad de servidor")
+if p0_start < 0 or p1_start <= p0_start:
+    raise SystemExit("Could not locate the P0/P1 sections in NEXT_IMPLEMENTATION_PLAN.md")
+p0 = """## P0 — Plataforma y compilación reproducible (completado en CI #50)
+
+- [x] ZIP de fuentes verificado y parches aplicados desde GitHub Actions.
+- [x] Java 21 y Gradle 8.12; clean test build correcto.
+- [x] NeoForge GameTests correctos.
+- [x] JAR con descriptor y versión exacta 0.9.1-alpha.
+- [x] Servidor dedicado alcanza marcador de arranque.
+- [x] Cliente headless inicializa sonido, recarga recursos y registra capa de skins.
+- [ ] Añadir Gradle Wrapper versionado con checksum para builds locales.
+- [ ] Añadir más GameTests de transacciones, construcción, persistencia y habilidades.
+
+"""
+plan_text = plan_text[:p0_start] + p0 + plan_text[p1_start:]
+plan_file.write_text(plan_text, encoding="utf-8")
+print("Updated PROJECT_STATUS, README_ES, SYSTEM_COMPLETION_MATRIX and NEXT_IMPLEMENTATION_PLAN.")
 print("All CI compile and packaging patches applied successfully.")
