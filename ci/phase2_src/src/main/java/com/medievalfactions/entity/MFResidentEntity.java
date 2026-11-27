@@ -157,8 +157,10 @@ public final class MFResidentEntity extends MFAnimatedMob {
             level.setBlock(position, original, 3);
             return false;
         }
-        // Reuse Minecraft's block-break event for synchronized vanilla crop particles and harvest audio.
-        level.levelEvent(2001, position, net.minecraft.world.level.block.Block.getId(original));
+        // Keep harvest feedback separate from block replacement: play the crop's vanilla break sound
+        // and emit a small success burst without invoking the client-side block-break level event.
+        level.playSound(null, position, net.minecraft.sounds.SoundEvents.CROP_BREAK,
+                net.minecraft.sounds.SoundSource.BLOCKS, 0.72F, 0.96F + level.random.nextFloat() * 0.08F);
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
                 position.getX() + 0.5D, position.getY() + 0.65D, position.getZ() + 0.5D,
                 3, 0.18D, 0.12D, 0.18D, 0.01D);
