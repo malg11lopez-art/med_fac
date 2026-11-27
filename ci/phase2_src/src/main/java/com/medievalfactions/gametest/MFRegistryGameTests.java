@@ -11,17 +11,20 @@ import com.medievalfactions.domain.MFCitizenState;
 import com.medievalfactions.domain.MFRaceBiology;
 import com.medievalfactions.domain.MFWorkOrderState;
 import com.medievalfactions.domain.MFGameCatalog;
+import com.medievalfactions.entity.MFResidentEntity;
 import com.medievalfactions.registry.MFBlocks;
 import com.medievalfactions.registry.MFEntities;
 import com.medievalfactions.registry.MFItems;
 import com.medievalfactions.registry.MFSounds;
 import com.medievalfactions.item.MFPotionItem;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.item.ArrowItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -284,6 +287,86 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:oak_planks", 0L) == 4L,
                 "Completed physical-station job did not create exactly four planks");
+        helper.succeed();
+    }
+
+
+    /**
+     * Exercises the complete server entity path: a materialized resident reaches
+     * its scheduled workstation waypoint and starts the recipe from MFResidentEntity.tick().
+     */
+    @GameTest(template = "empty", timeoutTicks = 80)
+    public static void residentEntityStartsRecipeOnPhysicalWorkstationArrival(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+
+        UUID founder = UUID.randomUUID();
+        var faction = factions.createFaction("Resident Work Test", founder, MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create entity-work faction"));
+        var settlement = world.createSettlement(faction.id(), "Resident Worksite")
+                .orElseThrow(() -> new AssertionError("Could not create entity-work settlement"));
+        helper.assertTrue(world.addSettlementFood(settlement.id(), 50L), "Could not provide resident food");
+        helper.assertTrue(world.replaceSettlement(world.settlement(settlement.id()).orElseThrow()
+                .withSecurityAndInfrastructure(80, 50)), "Could not secure entity-work settlement");
+
+        MFCitizenState worker = MFCitizenState.create(faction.id(), settlement.id(), "Physical Carpenter",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.CARPENTER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(worker, faction.primaryRace()), "Could not register physical carpenter");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:oak_log", 1L),
+                "Could not stock physical carpenter ingredients");
+
+        BlockPos station = helper.absolutePos(new BlockPos(2, 1, 2));
+        BlockPos standingPosition = station.above();
+        level.setBlock(station, Blocks.CRAFTING_TABLE.defaultBlockState(), 3);
+        String dimension = level.dimension().location().toString();
+        var schedule = new MFCitizenSimulation.CitizenSchedule(worker.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(dimension,
+                                standingPosition.getX(), standingPosition.getY(), standingPosition.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
+                "Could not persist resident's physical workstation schedule");
+
+        // Match the real server order: advance the advanced-data day, then derive
+        // a minute plan from the saved schedule before the entity arrives.
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        helper.assertTrue(advanced.updateScheduledNpcPlans(world, 0) == 1,
+                "Scheduled plan was not generated for the materialized resident");
+        helper.assertTrue(advanced.record("citizen_plans", worker.id(),
+                        MFCitizenSimulation.CitizenPlan.class)
+                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK
+                                && plan.destination().x() == standingPosition.getX()
+                                && plan.destination().y() == standingPosition.getY()
+                                && plan.destination().z() == standingPosition.getZ()).orElse(false),
+                "Resident plan did not point to the scheduled workstation");
+
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not create MFResidentEntity");
+        if (resident == null) return;
+        resident.bindCitizen(worker.id());
+        resident.setPos(standingPosition.getX() + 0.5D, standingPosition.getY(),
+                standingPosition.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add resident entity to GameTest world");
+
+        // MFResidentEntity checks its persistent plan every 10 ticks.
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(world.workOrders(settlement.id()).stream()
+                        .anyMatch(order -> order.workerId().equals(worker.id())
+                                && order.recipeId().equals("cut_planks")
+                                && order.status() == MFWorkOrderState.Status.RUNNING),
+                "Resident entity arrival did not start the recipe at the physical crafting table");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:oak_log", 0L) == 0L,
+                "Resident entity did not reserve the crafting ingredient");
+
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.workOrders(settlement.id()).stream()
+                        .filter(order -> order.workerId().equals(worker.id()) && order.active()).count() == 1L,
+                "Repeated physical station ticks created duplicate production orders");
         helper.succeed();
     }
 
