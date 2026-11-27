@@ -25,6 +25,10 @@ checks = {
     "server registers npc plan command": 'Commands.literal("plan").executes(ctx -> {' in cmd[cmd.find("private static LiteralArgumentBuilder<CommandSourceStack> npcCommands()"):],
     "server restricts npc management to operators": 'Commands.literal("npc").requires(source -> source.hasPermission(2))' in cmd,
     "planner updates population and scheduled plans": "advanced.planNpcPopulation(world, day)" in cmd and "advanced.updateScheduledNpcPlans(world, minute)" in cmd,
+    "GUI offers a contextual command suggestion": 'Component.literal("Preparar consulta")' in ui and "fillSuggestedCommand()" in ui,
+    "dashboard text reserves room for action controls": "panelHeight - 190" in ui,
+    "family status command is registered": 'Commands.literal("status").executes(ctx -> {' in cmd[cmd.find("private static LiteralArgumentBuilder<CommandSourceStack> familyCommands()"):],
+    "family status is scoped to the requesting player": "UUID playerId = player.getUUID();" in cmd and "!relation.personA().equals(playerId)" in cmd and "!marriage.personA().equals(playerId)" in cmd and "!pregnancy.motherId().equals(playerId)" in cmd and "!medical.patientId().equals(playerId)" in cmd,
 }
 failed = [label for label, ok in checks.items() if not ok]
 if failed:

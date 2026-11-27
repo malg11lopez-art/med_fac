@@ -51,6 +51,9 @@ public final class MFMainScreen extends Screen {
         int actionY = panelTop + panelHeight - 57;
         actionInput = new EditBox(font, panelLeft + 12, actionY, Math.max(180, panelWidth - 116), 20,
                 Component.literal("Acción del servidor"));
+        addRenderableWidget(Button.builder(Component.literal("Preparar consulta"),
+                button -> fillSuggestedCommand())
+                .bounds(panelLeft + 12, actionY - 24, 130, 18).build());
         actionInput.setMaxLength(160);
         actionInput.setHint(Component.literal("mf advanced ..."));
         addRenderableWidget(actionInput);
@@ -81,6 +84,22 @@ public final class MFMainScreen extends Screen {
 
     private void requestPage(int page) {
         MFManagementClientState.request(page);
+    }
+
+    /** Fills the command editor with a valid read/list action for the selected dashboard section. */
+    private void fillSuggestedCommand() {
+        if (actionInput == null) return;
+        String command = switch (MFManagementClientState.page()) {
+            case 1 -> "mf advanced npc list";
+            case 3 -> "mf advanced warfare army list";
+            case 4 -> "mf advanced caravan list";
+            case 5 -> "mf advanced companion list";
+            case 6 -> "mf advanced family status";
+            case 7 -> "mf advanced expedition list";
+            default -> "mf advanced dashboard";
+        };
+        actionInput.setValue(command);
+        actionInput.setFocused(true);
     }
 
     private void executeManagementCommand() {
@@ -142,7 +161,8 @@ public final class MFMainScreen extends Screen {
         int textX = panelLeft + 15;
         int textY = panelTop + 105;
         int lineHeight = 12;
-        int maxLines = Math.max(1, (panelHeight - 143) / lineHeight);
+        // Reserve space for the suggestion button, command editor and footer controls.
+        int maxLines = Math.max(1, (panelHeight - 190) / lineHeight);
         String[] lines = MFManagementClientState.body().split("\\R", -1);
         int shown = 0;
         for (String line : lines) {

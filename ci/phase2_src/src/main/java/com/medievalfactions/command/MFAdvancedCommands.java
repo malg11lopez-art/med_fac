@@ -1002,6 +1002,58 @@ public final class MFAdvancedCommands {
     private static LiteralArgumentBuilder<CommandSourceStack> familyCommands() {
         var command = Commands.literal("family");
 
+        // A player's family dashboard is intentionally scoped to their own person UUID.
+        command.then(Commands.literal("status").executes(ctx -> {
+            ServerPlayer player = ctx.getSource().getPlayerOrException();
+            UUID playerId = player.getUUID();
+            var data = MFAdvancedSavedData.get(ctx.getSource().getServer());
+            Person person = data.record("persons", playerId, Person.class).orElse(null);
+            ctx.getSource().sendSuccess(() -> Component.literal("FAMILIA — "
+                    + (person == null ? "sin registro personal" : person.familyName() + " | " + person.race()
+                    + " | " + (person.adult() ? "adulto" : "menor") + " | salud " + person.health())), false);
+
+            int rows = 0;
+            for (Relationship relation : data.records("relationships", Relationship.class)) {
+                if (!relation.personA().equals(playerId) && !relation.personB().equals(playerId)) continue;
+                UUID partnerId = relation.personA().equals(playerId) ? relation.personB() : relation.personA();
+                String partnerName = data.record("persons", partnerId, Person.class)
+                        .map(Person::familyName).filter(name -> !name.isBlank())
+                        .orElse(partnerId.toString().substring(0, 8));
+                ctx.getSource().sendSuccess(() -> Component.literal("Relación: " + partnerName
+                        + " | confianza " + relation.trust() + " | " + relation.status()
+                        + " | consentimiento mutuo " + relation.mutuallyConsenting()), false);
+                rows++;
+            }
+            for (com.medievalfactions.domain.MFFamilyCare.Marriage marriage :
+                    data.records("marriages", com.medievalfactions.domain.MFFamilyCare.Marriage.class)) {
+                if (!marriage.personA().equals(playerId) && !marriage.personB().equals(playerId)) continue;
+                UUID partnerId = marriage.personA().equals(playerId) ? marriage.personB() : marriage.personA();
+                String partnerName = data.record("persons", partnerId, Person.class)
+                        .map(Person::familyName).filter(name -> !name.isBlank())
+                        .orElse(partnerId.toString().substring(0, 8));
+                ctx.getSource().sendSuccess(() -> Component.literal("Matrimonio: " + partnerName
+                        + " | " + marriage.status()), false);
+                rows++;
+            }
+            for (Pregnancy pregnancy : data.records("pregnancies", Pregnancy.class)) {
+                if (!pregnancy.motherId().equals(playerId) && !pregnancy.fatherId().equals(playerId)) continue;
+                ctx.getSource().sendSuccess(() -> Component.literal("Gestación: " + pregnancy.status()
+                        + " | duración " + pregnancy.gestationDays() + " días"), false);
+                rows++;
+            }
+            for (com.medievalfactions.domain.MFFamilyCare.MedicalCase medical :
+                    data.records("medical_cases", com.medievalfactions.domain.MFFamilyCare.MedicalCase.class)) {
+                if (!medical.patientId().equals(playerId)) continue;
+                ctx.getSource().sendSuccess(() -> Component.literal("Salud: " + medical.condition()
+                        + " | gravedad " + medical.severity() + " | infección " + medical.infection()
+                        + " | " + medical.status()), false);
+                rows++;
+            }
+            if (rows == 0) ctx.getSource().sendSuccess(
+                    () -> Component.literal("Todavía no hay relaciones, matrimonios, gestaciones ni casos médicos registrados."), false);
+            return rows;
+        }));
+
         var registerName = Commands.argument("family_name", StringArgumentType.word()).executes(ctx -> {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
             var profile = MFWorldSavedData.get(ctx.getSource().getServer()).profile(player.getUUID());
