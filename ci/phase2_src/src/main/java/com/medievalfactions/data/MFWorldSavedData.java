@@ -290,6 +290,40 @@ public final class MFWorldSavedData extends SavedData {
     }
 
     /**
+     * Credits wool only to a shepherd who has actually sheared a live, eligible sheep.
+     * The color-specific wool and profession XP are committed atomically.
+     */
+    public synchronized boolean creditResidentWool(UUID settlementId, UUID citizenId,
+                                                    String woolItemId, long amount, long professionXp) {
+        MFSettlementState settlement = settlements.get(settlementId);
+        MFCitizenState shepherd = citizens.get(citizenId);
+        if (settlement == null || shepherd == null || !settlement.id().equals(shepherd.settlementId())
+                || !settlement.factionId().equals(shepherd.factionId())
+                || shepherd.profession() != Profession.SHEPHERD || shepherd.status() != CitizenStatus.ACTIVE
+                || shepherd.ageStage() == AgeStage.BABY || shepherd.ageStage() == AgeStage.CHILD
+                || amount <= 0L || amount > 4L || professionXp <= 0L || professionXp > 1_000L
+                || !Set.of("minecraft:white_wool", "minecraft:orange_wool", "minecraft:magenta_wool",
+                        "minecraft:light_blue_wool", "minecraft:yellow_wool", "minecraft:lime_wool",
+                        "minecraft:pink_wool", "minecraft:gray_wool", "minecraft:light_gray_wool",
+                        "minecraft:cyan_wool", "minecraft:purple_wool", "minecraft:blue_wool",
+                        "minecraft:brown_wool", "minecraft:green_wool", "minecraft:red_wool",
+                        "minecraft:black_wool").contains(woolItemId)
+                || !settlement.canAccept(woolItemId, amount)) return false;
+        LinkedHashMap<String, Long> nextStock = new LinkedHashMap<>(settlement.inventory());
+        MFCitizenState nextShepherd;
+        try {
+            nextStock.merge(woolItemId, amount, Math::addExact);
+            nextShepherd = shepherd.awardProfessionXp(professionXp);
+        } catch (ArithmeticException ex) {
+            return false;
+        }
+        settlements.put(settlementId, settlement.withInventory(nextStock));
+        citizens.put(citizenId, nextShepherd);
+        setDirty();
+        return true;
+    }
+
+    /**
      * Credits one fish caught by a working fisher. Output and profession XP are one transaction;
      * only the fisher profession may create raw fish products through this path.
      */
