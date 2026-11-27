@@ -8,21 +8,18 @@ fi
 
 SERVER_LOG="${RUNNER_TEMP:-/tmp}/medieval-factions-network-server.log"
 CLIENT_LOG="${RUNNER_TEMP:-/tmp}/medieval-factions-network-client.log"
+PROJECT_DIR="$PWD"
+BUILD_FILE="$PROJECT_DIR/build.gradle"
+BUILD_BACKUP="${RUNNER_TEMP:-/tmp}/medieval-factions-network-build.gradle.bak"
 PORT=25567
 : > "$SERVER_LOG"
 : > "$CLIENT_LOG"
 
-mkdir -p run/server
-printf 'eula=true\n' > run/server/eula.txt
-cat > run/server/server.properties <<PROPERTIES
-motd=MEDIEVAL FACTIONS network smoke test
-level-name=mf-network-smoke
-server-port=$PORT
-server-ip=127.0.0.1
-max-players=2
-online-mode=false
-enable-command-block=true
-PROPERTIES
+if [ ! -f "$BUILD_FILE" ]; then
+  echo "::error::build.gradle not found in the network smoke-test working directory."
+  exit 1
+fi
+cp "$BUILD_FILE" "$BUILD_BACKUP"
 
 SERVER_PID=""
 CLIENT_PID=""
@@ -42,10 +39,57 @@ stop_group() {
 cleanup() {
   stop_group "$CLIENT_PID"
   stop_group "$SERVER_PID"
+  if [ -f "$BUILD_BACKUP" ]; then
+    cp "$BUILD_BACKUP" "$BUILD_FILE"
+    rm -f "$BUILD_BACKUP"
+  fi
 }
 trap cleanup EXIT INT TERM
 
-# Boot a real dedicated server and wait for its network-ready marker.
+# ModDevGradle reads Minecraft args from the run configuration; do not pass
+# them through Gradle's --args, which are interpreted as DevLaunch main-class args.
+python - "$BUILD_FILE" "$PORT" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+port = int(sys.argv[2])
+source = path.read_text(encoding="utf-8")
+client_anchor = "        client {\n            client()\n"
+server_anchor = "        server {\n            server()\n"
+client_insert = (
+    "        client {\n"
+    "            client()\n"
+    "            gameDirectory = project.file('run/network-client')\n"
+    "            programArgument '--quickPlayMultiplayer'\n"
+    f"            programArgument '127.0.0.1:{port}'\n"
+)
+server_insert = (
+    "        server {\n"
+    "            server()\n"
+    "            gameDirectory = project.file('run/network-server')\n"
+)
+if source.count(client_anchor) != 1 or source.count(server_anchor) != 1:
+    raise SystemExit("Could not identify unique ModDevGradle client/server run blocks")
+source = source.replace(client_anchor, client_insert, 1)
+source = source.replace(server_anchor, server_insert, 1)
+path.write_text(source, encoding="utf-8")
+print("Configured isolated ModDevGradle client/server runs for the network smoke test.")
+PY
+
+SERVER_DIR="$PROJECT_DIR/run/network-server"
+mkdir -p "$SERVER_DIR" "$PROJECT_DIR/run/network-client"
+printf 'eula=true\n' > "$SERVER_DIR/eula.txt"
+cat > "$SERVER_DIR/server.properties" <<PROPERTIES
+motd=MEDIEVAL FACTIONS network smoke test
+level-name=mf-network-smoke
+server-port=$PORT
+server-ip=127.0.0.1
+max-players=2
+online-mode=false
+enable-command-block=true
+PROPERTIES
+
 setsid gradle --no-daemon runServer > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 SERVER_READY=0
@@ -62,9 +106,14 @@ if [ "$SERVER_READY" -ne 1 ]; then
   echo "::error::Dedicated server did not become ready for the network join test."
   exit 1
 fi
+if ! grep -Fq "Starting Minecraft server on /127.0.0.1:$PORT" "$SERVER_LOG" \
+    && ! grep -Fq "Starting Minecraft server on *:$PORT" "$SERVER_LOG"; then
+  cat "$SERVER_LOG"
+  echo "::error::Dedicated server did not bind to configured port $PORT."
+  exit 1
+fi
 
-# Launch a real headless client and join the local dedicated server.
-setsid env ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 xvfb-run -a gradle --no-daemon runClient --args="--quickPlayMultiplayer 127.0.0.1:$PORT" > "$CLIENT_LOG" 2>&1 &
+setsid env ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 xvfb-run -a gradle --no-daemon runClient > "$CLIENT_LOG" 2>&1 &
 CLIENT_PID=$!
 JOINED=0
 SKIN_ACCEPTED=0
@@ -88,9 +137,9 @@ CLIENT_PID=""
 stop_group "$SERVER_PID"
 SERVER_PID=""
 
-echo '--- Dedicated server network log ---'
+echo '--- Dedicated server log ---'
 cat "$SERVER_LOG"
-echo '--- Headless client network log ---'
+echo '--- Headless client log ---'
 cat "$CLIENT_LOG"
 
 if [ "$CLIENT_READY" -ne 1 ]; then
