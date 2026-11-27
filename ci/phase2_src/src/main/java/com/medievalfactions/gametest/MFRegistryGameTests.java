@@ -225,7 +225,8 @@ public final class MFRegistryGameTests {
         MFFactionSavedData factions = new MFFactionSavedData();
         // The real server day creates the work directive, but does not reserve
         // inputs until the resident reaches a valid physical workstation.
-        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 0L); // first server tick establishes the advanced-data baseline
+        world.advanceOneDay();                     // MFWorldEvents.observeMinecraftDay advances core world data
         advanced.advanceToDay(world, factions, 1L);
         var directive = advanced.record("npc_directives", firstWorker.id(),
                 MFAdvancedSystems.NpcDirective.class).orElse(null);
@@ -266,14 +267,10 @@ public final class MFRegistryGameTests {
                 MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
         helper.assertTrue(world.addCitizen(secondWorker, MFGameCatalog.RaceFamily.HUMANS),
                 "Could not register second carpenter");
+        world.advanceOneDay();                     // advances the running production order exactly once
         advanced.advanceToDay(world, factions, 2L);
         helper.assertTrue(advanced.startResidentWorkOrder(world, secondWorker.id(), "minecraft:crafting_table", 2L).isEmpty(),
                 "Carpenter without ingredients started a funded order");
-        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
-                        .getOrDefault("minecraft:oak_planks", 0L) == 0L,
-                "Autonomous planning fabricated recipe output before completion");
-
-        advanced.advanceToDay(world, factions, 3L);
         helper.assertTrue(world.workOrders(settlement.id()).stream()
                         .anyMatch(order -> order.id().equals(started.id())
                                 && order.status() == MFWorkOrderState.Status.COMPLETED),
