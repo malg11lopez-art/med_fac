@@ -153,10 +153,15 @@ public final class MFResidentEntity extends MFAnimatedMob {
         if (original.getValue(CropBlock.AGE) < matureAge) return false;
         var replanted = original.setValue(CropBlock.AGE, 0);
         if (!level.setBlock(position, replanted, 3)) return false;
-        if (!worldData.addSettlementStock(citizen.settlementId(), itemId, amount)) {
+        if (!worldData.creditResidentHarvest(citizen.settlementId(), citizen.id(), itemId, amount, 12L)) {
             level.setBlock(position, original, 3);
             return false;
         }
+        // Reuse Minecraft's block-break event for synchronized vanilla crop particles and harvest audio.
+        level.levelEvent(2001, position, net.minecraft.world.level.block.Block.getId(original));
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                position.getX() + 0.5D, position.getY() + 0.65D, position.getZ() + 0.5D,
+                3, 0.18D, 0.12D, 0.18D, 0.01D);
         return true;
     }
 

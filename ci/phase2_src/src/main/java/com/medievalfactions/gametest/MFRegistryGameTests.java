@@ -720,11 +720,15 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:carrot", 0L) == 2L,
                 "Harvest output was not credited to settlement inventory");
+        helper.assertTrue(world.citizen(farmer.id()).map(value -> value.professionXp() == 12L).orElse(false),
+                "A successful physical harvest must award farmer profession experience");
 
         for (int i = 0; i < 20; i++) resident.tick();
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:carrot", 0L) == 2L,
                 "Repeated resident ticks duplicated the same crop harvest");
+        helper.assertTrue(world.citizen(farmer.id()).map(value -> value.professionXp() == 12L).orElse(false),
+                "Repeated resident ticks duplicated farmer profession experience");
         helper.succeed();
     }
 
