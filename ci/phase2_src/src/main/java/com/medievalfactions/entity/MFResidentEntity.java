@@ -301,7 +301,10 @@ public final class MFResidentEntity extends MFAnimatedMob {
         if (target == null) return null;
         String woolId = "minecraft:" + target.getColor().getName() + "_wool";
         if (!worldData.creditResidentWool(citizen.settlementId(), citizen.id(), woolId, 1L, 10L)) return null;
-        target.shear(net.minecraft.sounds.SoundSource.BLOCKS);
+        // Keep the settlement inventory as the single authoritative wool destination.
+        target.setSheared(true);
+        level.playSound(null, target.blockPosition(), net.minecraft.sounds.SoundEvents.SHEEP_SHEAR,
+                net.minecraft.sounds.SoundSource.NEUTRAL, 0.7F, 0.95F + level.random.nextFloat() * 0.1F);
         lastProfessionWorkTick = now;
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
                 target.getX(), target.getY() + 0.8D, target.getZ(), 4, 0.22D, 0.18D, 0.22D, 0.02D);
