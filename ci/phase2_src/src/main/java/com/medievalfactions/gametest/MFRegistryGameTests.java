@@ -822,6 +822,66 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", batch = "zzzzResidentApiaryWork", timeoutTicks = 80)
+    public static void apiculturistHarvestsHoneyWithSmokeAndStoresBottle(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Apiary Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create apiary test faction"));
+        var settlement = world.createSettlement(faction.id(), "Honey Yard")
+                .orElseThrow(() -> new AssertionError("Could not create apiary test settlement"));
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:glass_bottle", 1L),
+                "Could not stock one glass bottle for the apiculturist");
+        MFCitizenState apiculturist = MFCitizenState.create(faction.id(), settlement.id(), "Test Apiculturist",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.APICULTURIST, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(apiculturist, faction.primaryRace()),
+                "Could not register apiculturist");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        BlockPos hive = standing.east();
+        BlockPos smoke = hive.below();
+        helper.assertTrue(level.setBlock(smoke, Blocks.CAMPFIRE.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.CampfireBlock.LIT, true), 3),
+                "Could not place lit smoke source below bee hive");
+        helper.assertTrue(level.setBlock(hive, Blocks.BEEHIVE.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL, 5), 3),
+                "Could not place a full bee hive");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(apiculturist.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save apiculturist schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not create apiculturist resident");
+        if (resident == null) return;
+        resident.bindCitizen(apiculturist.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add apiculturist resident");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(hive).is(Blocks.BEEHIVE)
+                        && level.getBlockState(hive).getValue(
+                                net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL) == 0,
+                "Apiculturist did not reset the full hive after harvesting");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:glass_bottle", 0L) == 0L
+                        && world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:honey_bottle", 0L) == 1L,
+                "Apiculturist did not exchange one glass bottle for one honey bottle");
+        helper.assertTrue(world.citizen(apiculturist.id()).map(c -> c.professionXp() == 10L).orElse(false),
+                "Successful honey collection did not award ten profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:honey_bottle", 0L) == 1L,
+                "Repeated resident ticks duplicated the honey bottle");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "zzzResidentRancherWork", timeoutTicks = 80)
     public static void rancherMilksNearbyCowUsingSettlementBucket(GameTestHelper helper) {
         var level = helper.getLevel();
