@@ -1,0 +1,33 @@
+package com.medievalfactions.domain;
+
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Small, explicit bridge between starter production recipes and blocks that can host them.
+ * A scheduled resident may only start an order at a compatible, loaded workstation.
+ */
+public final class MFWorkstationRules {
+    private static final Map<String, Set<String>> STATIONS_BY_RECIPE = Map.of(
+            "cut_planks", Set.of("minecraft:crafting_table"),
+            "smelt_iron", Set.of("minecraft:furnace", "minecraft:blast_furnace", "medieval_factions:forge_controller"),
+            "smelt_gold", Set.of("minecraft:furnace", "minecraft:blast_furnace", "medieval_factions:forge_controller"),
+            "bake_bread", Set.of("minecraft:furnace", "minecraft:smoker", "minecraft:campfire"),
+            "forge_iron_sword", Set.of("minecraft:anvil", "minecraft:smithing_table",
+                    "medieval_factions:blacksmith_anvil", "medieval_factions:forge_controller"),
+            "craft_iron_chestplate", Set.of("minecraft:anvil", "minecraft:smithing_table",
+                    "medieval_factions:blacksmith_anvil", "medieval_factions:forge_controller")
+    );
+
+    private MFWorkstationRules() {}
+
+    public static boolean supports(String recipeId, String blockId) {
+        if (recipeId == null || blockId == null
+                || !blockId.matches("[a-z0-9_.-]+:[a-z0-9_./-]+")) return false;
+        return STATIONS_BY_RECIPE.getOrDefault(recipeId, Set.of()).contains(blockId);
+    }
+
+    public static Set<String> acceptedStations(String recipeId) {
+        return STATIONS_BY_RECIPE.getOrDefault(recipeId, Set.of());
+    }
+}
