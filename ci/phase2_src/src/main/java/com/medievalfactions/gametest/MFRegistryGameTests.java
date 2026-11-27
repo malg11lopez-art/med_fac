@@ -3,7 +3,6 @@ package com.medievalfactions.gametest;
 import com.medievalfactions.MedievalFactions;
 import com.medievalfactions.data.MFAdvancedSavedData;
 import com.medievalfactions.data.MFFactionSavedData;
-import com.medievalfactions.data.MFFactionSavedData;
 import com.medievalfactions.data.MFWorldSavedData;
 import com.medievalfactions.domain.MFCitizenSimulation;
 import com.medievalfactions.domain.MFWorkstationRules;
