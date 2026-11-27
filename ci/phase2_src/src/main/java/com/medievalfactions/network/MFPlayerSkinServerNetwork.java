@@ -31,6 +31,16 @@ public final class MFPlayerSkinServerNetwork {
         registrar.playToServer(MFManagementRequestPayload.TYPE,
                 MFManagementRequestPayload.STREAM_CODEC,
                 MFPlayerSkinServerNetwork::handleManagementRequest);
+
+        // Register server-to-client payloads on the server as well. NeoForge
+        // negotiates both directions during login; omitting these declarations
+        // disconnects otherwise-compatible clients before they can join.
+        registrar.playToClient(MFPlayerSkinSyncPayload.TYPE,
+                MFPlayerSkinSyncPayload.STREAM_CODEC,
+                (payload, context) -> {});
+        registrar.playToClient(MFManagementSnapshotPayload.TYPE,
+                MFManagementSnapshotPayload.STREAM_CODEC,
+                (payload, context) -> {});
     }
 
     private static void handleManagementRequest(MFManagementRequestPayload payload, IPayloadContext context) {
