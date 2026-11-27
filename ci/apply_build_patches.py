@@ -429,4 +429,53 @@ elif menu_overlay_parts:
 else:
     raise SystemExit("In-game command hub patch bundle is missing.")
 
+# The advertised launcher shortcut is O (GLFW_KEY_O=79), not P (80).
+menu_input = root / "client/MFPlayerSkinInput.java"
+menu_input_text = menu_input.read_text(encoding="utf-8")
+old_key = '            80,\n            "key.categories.medieval_factions");'
+new_key = '            79,\n            "key.categories.medieval_factions");'
+if menu_input_text.count(old_key) == 1:
+    menu_input_text = menu_input_text.replace(old_key, new_key, 1)
+elif menu_input_text.count(new_key) == 1:
+    pass
+else:
+    raise SystemExit("Could not verify the in-game menu O shortcut mapping")
+menu_input.write_text(menu_input_text, encoding="utf-8")
+
+# Validate that every hub button maps to an implemented server command, not
+# merely to a literal string embedded in the UI class.
+validator_text = menu_validator.read_text(encoding="utf-8")
+menu_validation_old = '''    if "OPEN_MENU.consumeClick()" not in input_code or "event.register(MFPlayerSkinInput.OPEN_MENU)" not in events_code:
+        errors.append("El panel principal no está enlazado a su tecla de acceso")
+'''
+menu_validation_new = '''    if "OPEN_MENU.consumeClick()" not in input_code or "event.register(MFPlayerSkinInput.OPEN_MENU)" not in events_code:
+        errors.append("El panel principal no está enlazado a su tecla de acceso")
+    if '            79,' not in input_code:
+        errors.append("El panel principal debe abrirse con la tecla O (GLFW_KEY_O)")
+    commands_file = java_root / "com/medievalfactions/command/MFCommands.java"
+    advanced_file = java_root / "com/medievalfactions/command/MFAdvancedCommands.java"
+    if not commands_file.is_file() or not advanced_file.is_file():
+        errors.append("Faltan los comandos que conectan el panel de jugador")
+    else:
+        commands_text = commands_file.read_text(encoding="utf-8")
+        advanced_text = advanced_file.read_text(encoding="utf-8")
+        wired = (
+            'Commands.literal("character")' in commands_text
+            and 'Commands.literal("info")' in commands_text
+            and 'Commands.literal("tree")' in commands_text
+            and 'Commands.literal("faction")' in commands_text
+            and "calendarCommand()" in commands_text
+            and 'Commands.literal("skill")' in advanced_text
+            and 'Commands.literal("companion")' in advanced_text
+            and "dashboardCommand()" in advanced_text
+        )
+        if not wired:
+            errors.append("Uno o más comandos del panel no están registrados en el árbol de comandos")
+'''
+if menu_validation_old not in validator_text:
+    raise Error("UI validator block not found to extend")
+validator_text=validator_text.replace(menu_validation_old,menu_validation_new,1)
+menu_validator.write_text(validator_text,encoding="utf-8")
+print("Pinned the in-game command hub to O and verified backing commands.")
+
 print("All CI compile and packaging patches applied successfully.")
