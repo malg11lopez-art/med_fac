@@ -5,7 +5,7 @@ import com.medievalfactions.entity.MFResidentEntity;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.GeoModel;
 
-/** Civilian resident appearance on the shared humanoid rig; guards retain their armored texture. */
+/** Profession-tinted civilian textures share the resident humanoid geometry and animation rig. */
 public final class MFResidentModel extends GeoModel<MFResidentEntity> {
     @Override
     public ResourceLocation getModelResource(MFResidentEntity animatable) {
@@ -14,7 +14,17 @@ public final class MFResidentModel extends GeoModel<MFResidentEntity> {
 
     @Override
     public ResourceLocation getTextureResource(MFResidentEntity animatable) {
-        return ResourceLocation.fromNamespaceAndPath(MedievalFactions.MOD_ID, "textures/entity/resident.png");
+        String texture = switch (animatable.visualRole()) {
+            case 1 -> "resident_farmer";
+            case 2 -> "resident_smith";
+            case 3 -> "resident_scholar";
+            case 4 -> "resident_healer";
+            case 5 -> "resident_trader";
+            case 6 -> "resident_guard";
+            default -> "resident";
+        };
+        return ResourceLocation.fromNamespaceAndPath(MedievalFactions.MOD_ID,
+                "textures/entity/" + texture + ".png");
     }
 
     @Override

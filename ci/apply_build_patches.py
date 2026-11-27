@@ -764,4 +764,21 @@ if "releaseBreath(LivingEntity primaryTarget)" not in dragon_file.read_text(enco
     raise SystemExit("Autonomous dragon breath routine was not installed.")
 print(f"Applied phase-two source integration ({len(phase2_files)} files).")
 
+# The civilian renderer selects profession-specific skins at runtime. Fail early if
+# a future source-archive update drops one of those resources or the synchronized key.
+resident_model_file = root / "entity/model/MFResidentModel.java"
+resident_entity_file = root / "entity/MFResidentEntity.java"
+resident_model_text = resident_model_file.read_text(encoding="utf-8") if resident_model_file.is_file() else ""
+resident_entity_text = resident_entity_file.read_text(encoding="utf-8") if resident_entity_file.is_file() else ""
+resident_roles = ("farmer", "smith", "scholar", "healer", "trader", "guard")
+for role in resident_roles:
+    texture = project / "src/main/resources/assets/medieval_factions/textures/entity" / f"resident_{role}.png"
+    if not texture.is_file():
+        raise SystemExit(f"Missing resident profession texture: {texture.relative_to(project)}")
+    if f'resident_{role}' not in resident_model_text:
+        raise SystemExit(f"Resident renderer does not map profession texture: {role}")
+if "VISUAL_ROLE" not in resident_entity_text or "defineSynchedData" not in resident_entity_text:
+    raise SystemExit("Resident profession appearance key is not synchronized to clients.")
+print("Verified six profession-specific resident textures and synchronized renderer mapping.")
+
 print("All CI compile and packaging patches applied successfully.")

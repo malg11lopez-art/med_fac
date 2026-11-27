@@ -792,6 +792,8 @@ public final class MFRegistryGameTests {
         helper.assertTrue(level.addFreshEntity(resident), "Could not add farmer entity to GameTest world");
 
         for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(resident.visualRole() == 1,
+                "Farmer profession was not synchronized to the resident renderer");
         helper.assertTrue(level.getBlockState(crop).getValue(CropBlock.AGE) == 0,
                 "Mature crop was not replanted to age zero after harvest");
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
