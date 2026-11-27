@@ -587,6 +587,69 @@ public final class MFRegistryGameTests {
 
 
     /**
+     * Advanced record buckets carry independent schema versions. Old saves without
+     * the version map are accepted as bucket schema zero and upgraded on the next save.
+     * Unknown, future or malformed bucket markers are rejected before data is overwritten.
+     */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void advancedBucketSchemasUpgradeLegacyAndRejectIncompatibleMarkers(GameTestHelper helper) {
+        MFAdvancedSavedData source = new MFAdvancedSavedData();
+        UUID citizenId = UUID.randomUUID();
+        var directive = new MFAdvancedSystems.NpcDirective(citizenId,
+                MFAdvancedSystems.NpcIntent.WORK, 70, 4L, "Bucket schema compatibility");
+        helper.assertTrue(source.storeSimulationRecord("npc_directives", citizenId, directive,
+                        MFAdvancedSystems.NpcDirective.class),
+                "Could not create bucket schema test record");
+
+        CompoundTag current = source.save(new CompoundTag(), helper.getLevel().registryAccess());
+        CompoundTag versions = current.getCompound("advanced_bucket_schema_versions");
+        helper.assertTrue(versions.getAllKeys().size() == 31,
+                "Current advanced save must declare a schema version for all 31 buckets");
+        helper.assertTrue(versions.getInt("npc_directives") == 1
+                        && versions.getInt("expedition_journeys") == 1,
+                "Current bucket schema versions were not written");
+
+        // A v1 file predating per-bucket markers is treated as bucket schema zero.
+        CompoundTag legacy = current.copy();
+        legacy.remove("advanced_bucket_schema_versions");
+        MFAdvancedSavedData upgraded = MFAdvancedSavedData.load(legacy, helper.getLevel().registryAccess());
+        helper.assertTrue(upgraded.record("npc_directives", citizenId, MFAdvancedSystems.NpcDirective.class)
+                        .map(directive::equals).orElse(false),
+                "Legacy bucket schema zero did not preserve its record");
+        CompoundTag migrated = upgraded.save(new CompoundTag(), helper.getLevel().registryAccess());
+        helper.assertTrue(migrated.getCompound("advanced_bucket_schema_versions").getAllKeys().size() == 31,
+                "Saving a legacy advanced record did not write all current bucket schema versions");
+
+        CompoundTag future = current.copy();
+        CompoundTag futureVersions = future.getCompound("advanced_bucket_schema_versions");
+        futureVersions.putInt("npc_directives", 999);
+        future.put("advanced_bucket_schema_versions", futureVersions);
+        helper.assertTrue(rejectsSchema(() -> MFAdvancedSavedData.load(future, helper.getLevel().registryAccess())),
+                "A future per-bucket schema version was silently accepted");
+
+        CompoundTag malformed = current.copy();
+        CompoundTag malformedVersions = malformed.getCompound("advanced_bucket_schema_versions");
+        malformedVersions.putString("npc_directives", "1");
+        malformed.put("advanced_bucket_schema_versions", malformedVersions);
+        helper.assertTrue(rejectsSchema(() -> MFAdvancedSavedData.load(malformed, helper.getLevel().registryAccess())),
+                "A non-integer per-bucket schema marker was silently accepted");
+
+        CompoundTag unknown = current.copy();
+        CompoundTag unknownVersions = unknown.getCompound("advanced_bucket_schema_versions");
+        unknownVersions.putInt("future_bucket", 1);
+        unknown.put("advanced_bucket_schema_versions", unknownVersions);
+        helper.assertTrue(rejectsSchema(() -> MFAdvancedSavedData.load(unknown, helper.getLevel().registryAccess())),
+                "An unknown future bucket was silently discarded");
+
+        CompoundTag malformedContainer = current.copy();
+        malformedContainer.putString("advanced_bucket_schema_versions", "not a compound");
+        helper.assertTrue(rejectsSchema(() -> MFAdvancedSavedData.load(
+                        malformedContainer, helper.getLevel().registryAccess())),
+                "A malformed per-bucket schema container was silently accepted");
+        helper.succeed();
+    }
+
+    /**
      * Corrupt advanced records are isolated: valid neighbours survive while malformed,
      * oversized, missing-ID and duplicate-ID entries are discarded independently.
      */
