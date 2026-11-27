@@ -356,6 +356,40 @@ public final class MFWorldSavedData extends SavedData {
     }
 
     /**
+     * Atomically exchanges one empty bottle for one honey bottle harvested by an apiculturist.
+     * The input, output and profession XP are committed together.
+     */
+    public synchronized boolean creditResidentHoneyBottle(UUID settlementId, UUID citizenId,
+                                                           long amount, long professionXp) {
+        MFSettlementState settlement = settlements.get(settlementId);
+        MFCitizenState apiculturist = citizens.get(citizenId);
+        if (settlement == null || apiculturist == null
+                || !settlement.id().equals(apiculturist.settlementId())
+                || !settlement.factionId().equals(apiculturist.factionId())
+                || apiculturist.profession() != Profession.APICULTURIST
+                || apiculturist.status() != CitizenStatus.ACTIVE
+                || apiculturist.ageStage() == AgeStage.BABY || apiculturist.ageStage() == AgeStage.CHILD
+                || amount != 1L || professionXp <= 0L || professionXp > 1_000L
+                || settlement.inventory().getOrDefault("minecraft:glass_bottle", 0L) < amount
+                || !settlement.canAccept("minecraft:honey_bottle", amount)) return false;
+        LinkedHashMap<String, Long> nextStock = new LinkedHashMap<>(settlement.inventory());
+        MFCitizenState nextApiculturist;
+        try {
+            long bottles = nextStock.getOrDefault("minecraft:glass_bottle", 0L);
+            if (bottles == amount) nextStock.remove("minecraft:glass_bottle");
+            else nextStock.put("minecraft:glass_bottle", bottles - amount);
+            nextStock.merge("minecraft:honey_bottle", amount, Math::addExact);
+            nextApiculturist = apiculturist.awardProfessionXp(professionXp);
+        } catch (ArithmeticException ex) {
+            return false;
+        }
+        settlements.put(settlementId, settlement.withInventory(nextStock));
+        citizens.put(citizenId, nextApiculturist);
+        setDirty();
+        return true;
+    }
+
+    /**
      * Credits one fish caught by a working fisher. Output and profession XP are one transaction;
      * only the fisher profession may create raw fish products through this path.
      */
