@@ -4,6 +4,7 @@ from pathlib import Path
 import base64
 import gzip
 import subprocess
+import shutil
 import sys
 
 if len(sys.argv) != 2:
@@ -720,5 +721,33 @@ elif network_overlay_parts:
     print("Installed skin packet acceptance/round-trip diagnostic markers.")
 else:
     raise SystemExit("Network packet diagnostic patch bundle is missing.")
+
+
+# Apply reviewed phase-two source files: population index, management GUI,
+# tactical warfare, army columns, physical bosses, autonomous dragons and stress tests.
+phase2_root = Path(__file__).resolve().parent / "phase2_src"
+if not phase2_root.is_dir():
+    raise SystemExit("Phase-two source overlay is missing.")
+phase2_files = sorted(path for path in phase2_root.rglob("*") if path.is_file())
+if len(phase2_files) < 16:
+    raise SystemExit(f"Phase-two source overlay is incomplete: expected at least 16 files, found {len(phase2_files)}")
+for source_file in phase2_files:
+    relative = source_file.relative_to(phase2_root)
+    target_file = project / relative
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source_file, target_file)
+population_index_file = root / "domain/MFPopulationIndex.java"
+dashboard_file = root / "data/MFManagementDashboard.java"
+warfare_commands_file = root / "command/MFAdvancedCommands.java"
+dragon_file = root / "entity/MFDragonEntity.java"
+if not population_index_file.is_file() or "isTravelling" not in population_index_file.read_text(encoding="utf-8"):
+    raise SystemExit("Phase-two population index is missing or incomplete.")
+if not dashboard_file.is_file() or "Resumen del reino" not in dashboard_file.read_text(encoding="utf-8"):
+    raise SystemExit("Server-backed management dashboard was not installed.")
+if "warfareCommands()" not in warfare_commands_file.read_text(encoding="utf-8") or "bossCommands()" not in warfare_commands_file.read_text(encoding="utf-8"):
+    raise SystemExit("Tactical warfare/physical boss command routes were not installed.")
+if "releaseBreath(LivingEntity primaryTarget)" not in dragon_file.read_text(encoding="utf-8"):
+    raise SystemExit("Autonomous dragon breath routine was not installed.")
+print(f"Applied phase-two source integration ({len(phase2_files)} files).")
 
 print("All CI compile and packaging patches applied successfully.")

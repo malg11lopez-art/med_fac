@@ -11,6 +11,7 @@ on:
       - 'ci/smoke_multiplayer_join.sh'
       - 'ci/feature_patch/**'
       - 'ci/overlays/**'
+      - 'ci/phase2_src/**'
       - 'ci/verify_sound_preview.py'
       - 'ci/verify_skin_sync.py'
       - 'ci/quality_patch/**'
@@ -73,15 +74,12 @@ jobs:
             --exclude .github/ \
             --exclude .git/ \
             "$PROJECT_DIR/" "$SNAPSHOT_DIR/"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch --orphan work/phase2-source-snapshot
-          git rm -rf . >/dev/null 2>&1 || true
-          cp -a "$SNAPSHOT_DIR/." .
-          rm -rf .github
-          git add -A
-          git commit -m "build: export patched source snapshot for phase implementation"
-          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/work/phase2-source-snapshot
+          git -C "$SNAPSHOT_DIR" init
+          git -C "$SNAPSHOT_DIR" config user.name "github-actions[bot]"
+          git -C "$SNAPSHOT_DIR" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$SNAPSHOT_DIR" add -A
+          git -C "$SNAPSHOT_DIR" commit -m "build: export patched source snapshot for phase implementation"
+          git -C "$SNAPSHOT_DIR" push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/work/phase2-source-snapshot
 
       - name: Upload patched source snapshot for QA
         uses: actions/upload-artifact@v4
