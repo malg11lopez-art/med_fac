@@ -737,6 +737,42 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", batch = "residentResources", timeoutTicks = 40)
+    public static void lumberjackAndMinerResourceCreditsAreProfessionBound(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        UUID founder = UUID.randomUUID();
+        var faction = factions.createFaction("Resource Workers", founder, MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create resource test faction"));
+        var settlement = world.createSettlement(faction.id(), "Timber and Ore")
+                .orElseThrow(() -> new AssertionError("Could not create resource test settlement"));
+        int adultAge = MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS);
+        MFCitizenState lumberjack = MFCitizenState.create(faction.id(), settlement.id(), "Lumberjack",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.LUMBERJACK, 0L, 20, adultAge);
+        MFCitizenState miner = MFCitizenState.create(faction.id(), settlement.id(), "Miner",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.MINER, 0L, 20, adultAge);
+        helper.assertTrue(world.addCitizen(lumberjack, faction.primaryRace()), "Could not register lumberjack");
+        helper.assertTrue(world.addCitizen(miner, faction.primaryRace()), "Could not register miner");
+
+        helper.assertTrue(world.creditResidentResource(settlement.id(), lumberjack.id(),
+                "minecraft:oak_log", 1L, 8L), "Lumberjack log credit should succeed");
+        helper.assertTrue(world.creditResidentResource(settlement.id(), miner.id(),
+                "minecraft:raw_iron", 1L, 8L), "Miner ore credit should succeed");
+        helper.assertTrue(!world.creditResidentResource(settlement.id(), lumberjack.id(),
+                "minecraft:diamond", 1L, 8L), "Lumberjack must not receive mining output");
+        helper.assertTrue(!world.creditResidentResource(settlement.id(), miner.id(),
+                "minecraft:oak_log", 1L, 8L), "Miner must not receive forestry output");
+        var stock = world.settlement(settlement.id()).orElseThrow().inventory();
+        helper.assertTrue(stock.getOrDefault("minecraft:oak_log", 0L) == 1L
+                        && stock.getOrDefault("minecraft:raw_iron", 0L) == 1L,
+                "Rejected profession/resource combinations must not alter settlement stock");
+        helper.assertTrue(world.citizen(lumberjack.id()).map(c -> c.professionXp() == 8L).orElse(false)
+                        && world.citizen(miner.id()).map(c -> c.professionXp() == 8L).orElse(false),
+                "Successful resource work must award profession XP exactly once");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 80)
     public static void residentFarmerHarvestsMatureCropIntoSettlementStock(GameTestHelper helper) {
         var level = helper.getLevel();
