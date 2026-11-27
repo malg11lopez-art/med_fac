@@ -1,10 +1,10 @@
 # Auditoría general — MEDIEVAL FACTIONS v0.9.1-alpha
 
 **Fecha:** 27-11-2026  
-**Ejecución:** [GitHub Actions #122 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/45993385952)  
-**Commit:** `a4baf960f3af054722a0238bf6fa48ffe94bfe5f`  
-**JAR:** artefacto `medieval-factions-jar-a4baf960f3af054722a0238bf6fa48ffe94bfe5f`  
-**Tamaño del artefacto ZIP:** 1.599.999 bytes
+**Ejecución:** [GitHub Actions #126 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/45994340442)  
+**Commit:** `21b0958d2c80343d9b3426aa224b3b861fc51d56`  
+**JAR:** artefacto `medieval-factions-jar-21b0958d2c80343d9b3426aa224b3b861fc51d56`  
+**Tamaño del artefacto ZIP:** 1.600.950 bytes
 
 ## Resumen ejecutivo
 
@@ -23,7 +23,7 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 | Pruebas de dominio | 276 aserciones PASS |
 | SavedData stub smoke test | PASS |\n| SavedData avanzado real NBT/JSON | 31/31 buckets tipados con round-trip GameTest |\n| Compatibilidad de esquemas SavedData | 12/12 checks estáticos + pruebas runtime de esquemas antiguos/futuros/malformados |
 | Gradle clean test build | PASS |
-| NeoForge GameTests | 7/7 pruebas obligatorias PASS |
+| NeoForge GameTests | 8/8 pruebas obligatorias PASS |
 | Descriptor/JAR versión 0.9.1-alpha | PASS |
 | Arranque de servidor dedicado | PASS |
 | Arranque de cliente y recarga de recursos | PASS |
@@ -37,7 +37,7 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 4. Selección de objetivos mediante ray tracing de entidades limitado por la primera colisión de bloque.
 5. Panel O con accesos a comandos existentes; CI comprueba la tecla y los comandos de destino.
 6. Lookup indexado de ciudadano por UUID para reducir trabajo repetido por entidad residente.
-7. Documentación de estado, matriz de cobertura, puertas de calidad y plan de implementación actualizadas dentro del ZIP de fuentes.\n8. GameTest de serialización/recarga de los 31 buckets avanzados; CI también verifica la acción de planificación de la GUI y el inicio real de una receta al llegar un residente a una estación física (CI #122).
+7. Documentación de estado, matriz de cobertura, puertas de calidad y plan de implementación actualizadas dentro del ZIP de fuentes.\n8. GameTest de serialización/recarga de los 31 buckets avanzados y GameTest de aislamiento de registros corruptos; CI también verifica la acción de planificación de la GUI y el inicio real de una receta al llegar un residente a una estación física (CI #126).
 
 ## Limitaciones y trabajo no demostrado
 
@@ -61,4 +61,4 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 - El JAR debe declarar exactamente `0.9.1-alpha`; el atajo del panel se valida como tecla O (79).
 - El texto del dashboard y la documentación del ZIP ya no contradicen las integraciones actuales.
 
-**Dictamen:** CI #122 acredita build NeoForge, 276 aserciones de dominio, SavedData stub, compatibilidad de esquemas, round-trip NBT/JSON en los 31 buckets avanzados, 7 GameTests, arranque cliente/servidor y conexión real con sincronización de skin. No acredita una partida manual completa, evaluación visual/auditiva humana, pruebas prolongadas con varios jugadores ni el cumplimiento del Documento Maestro. El proyecto sigue siendo alpha.
+**Dictamen:** CI #126 acredita build NeoForge, 276 aserciones de dominio, SavedData stub, compatibilidad de esquemas, round-trip NBT/JSON en los 31 buckets avanzados, recuperación aislada de registros corruptos, 8 GameTests, arranque cliente/servidor y conexión real con sincronización de skin. No acredita una partida manual completa, evaluación visual/auditiva humana, pruebas prolongadas con varios jugadores ni el cumplimiento del Documento Maestro. El proyecto sigue siendo alpha.
