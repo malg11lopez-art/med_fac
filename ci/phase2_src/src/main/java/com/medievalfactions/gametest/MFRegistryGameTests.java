@@ -3,6 +3,7 @@ package com.medievalfactions.gametest;
 import com.medievalfactions.MedievalFactions;
 import com.medievalfactions.data.MFAdvancedSavedData;
 import com.medievalfactions.data.MFFactionSavedData;
+import com.medievalfactions.data.MFFactionSavedData;
 import com.medievalfactions.data.MFWorldSavedData;
 import com.medievalfactions.domain.MFCitizenSimulation;
 import com.medievalfactions.domain.MFAdvancedSystems;
@@ -221,8 +222,14 @@ public final class MFRegistryGameTests {
                 "Could not stock the funded recipe");
 
         MFAdvancedSavedData advanced = new MFAdvancedSavedData();
-        helper.assertTrue(advanced.planNpcPopulation(world, 1L) == 1,
-                "NPC population planner did not process the active worker");
+        MFFactionSavedData factions = new MFFactionSavedData();
+        // First server day establishes the existing world baseline; the next day
+        // exercises the same advanceToDay -> planNpcPopulation path as MFWorldEvents.
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        helper.assertTrue(advanced.record("npc_directives", firstWorker.id(),
+                        MFAdvancedSystems.NpcDirective.class).isPresent(),
+                "Daily simulation did not process the active worker");
         var directive = advanced.record("npc_directives", firstWorker.id(),
                 MFAdvancedSystems.NpcDirective.class).orElse(null);
         helper.assertTrue(directive != null && directive.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK,
@@ -236,7 +243,7 @@ public final class MFRegistryGameTests {
                 "Autonomous recipe did not reserve its ingredient");
 
         // Replanning an already-employed worker must not create a second active order.
-        advanced.planNpcPopulation(world, 2L);
+        advanced.advanceToDay(world, factions, 2L);
         helper.assertTrue(world.workOrders(settlement.id()).stream()
                         .filter(order -> order.workerId().equals(firstWorker.id()) && order.active()).count() == 1L,
                 "Repeated NPC planning duplicated the active production order");
@@ -247,7 +254,7 @@ public final class MFRegistryGameTests {
                 MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
         helper.assertTrue(world.addCitizen(secondWorker, MFGameCatalog.RaceFamily.HUMANS),
                 "Could not register second carpenter");
-        advanced.planNpcPopulation(world, 3L);
+        advanced.advanceToDay(world, factions, 3L);
         helper.assertTrue(world.workOrders(settlement.id()).stream()
                         .filter(order -> order.workerId().equals(secondWorker.id()) && order.active()).findAny().isEmpty(),
                 "Unfunded carpenter started work without the required materials");
