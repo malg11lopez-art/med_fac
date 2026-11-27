@@ -473,7 +473,7 @@ menu_validation_new = '''    if "OPEN_MENU.consumeClick()" not in input_code or 
             errors.append("Uno o más comandos del panel no están registrados en el árbol de comandos")
 '''
 if menu_validation_old not in validator_text:
-    raise Error("UI validator block not found to extend")
+    raise SystemExit("UI validator block not found to extend")
 validator_text=validator_text.replace(menu_validation_old,menu_validation_new,1)
 menu_validator.write_text(validator_text,encoding="utf-8")
 print("Pinned the in-game command hub to O and verified backing commands.")
@@ -513,4 +513,32 @@ elif resident_overlay_parts:
 else:
     raise SystemExit("Indexed resident lookup patch bundle is missing.")
 
+
+# Correct the in-game dashboard text so it reflects features already integrated.
+# The dashboard should distinguish the quick command hub from the full GUI backlog.
+advanced_commands = root / "command/MFAdvancedCommands.java"
+advanced_text = advanced_commands.read_text(encoding="utf-8")
+old_dashboard = "§7Base de simulación persistente activa. GUI completa, entidades de ejército/carro, animaciones y sincronización final aún pendientes."
+new_dashboard = "§7Panel rápido disponible (O); skins con sincronización de servidor integrada (pendiente prueba con dos clientes). Siguen pendientes la GUI de gestión completa, IA social/laboral autónoma y entidades físicas de ejército y caravanas."
+if old_dashboard in advanced_text:
+    advanced_text = advanced_text.replace(old_dashboard, new_dashboard, 1)
+elif new_dashboard not in advanced_text:
+    raise SystemExit("Dashboard status text did not match either the old or updated wording.")
+advanced_commands.write_text(advanced_text, encoding="utf-8")
+
+dashboard_marker = "DASHBOARD_STATUS_VALIDATION_V1"
+validator_text = validator_file.read_text(encoding="utf-8")
+dashboard_check = """        # DASHBOARD_STATUS_VALIDATION_V1
+        if "Panel rápido disponible (O)" not in advanced_text:
+            errors.append("El dashboard debe reflejar el panel rápido y el estado actual de las skins")
+        if "sincronización final aún pendientes" in advanced_text:
+            errors.append("El dashboard contiene texto obsoleto sobre la sincronización de skins")
+"""
+if dashboard_marker not in validator_text:
+    anchor = '        if not wired:\n            errors.append("Uno o más comandos del panel no están registrados en el árbol de comandos")\n'
+    if validator_text.count(anchor) != 1:
+        raise SystemExit("Could not find unique insertion point for dashboard status validation.")
+    validator_text = validator_text.replace(anchor, anchor + dashboard_check, 1)
+    validator_file.write_text(validator_text, encoding="utf-8")
+print("Updated and validated the in-game dashboard status.")
 print("All CI compile and packaging patches applied successfully.")

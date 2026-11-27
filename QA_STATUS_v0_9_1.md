@@ -1,64 +1,62 @@
-# Informe de QA — MEDIEVAL FACTIONS 0.9.1-alpha
+# Auditoría general — MEDIEVAL FACTIONS v0.9.1-alpha
 
-Fecha: 26-11-2026  
-Workflow: [Build MEDIEVAL FACTIONS #42](https://github.com/malg11lopez-art/med_fac/actions/runs/45908989072)  
-Commit: `947999c8b4737c9c535375a0ea0b9c6ce101951d`  
-Resultado: **SUCCESS**
+**Fecha:** 27-11-2026  
+**Ejecución:** [GitHub Actions #49 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/45915911949)  
+**Commit:** `18d7b50156ffc89256e81c32550dd0b2eb7d4811`  
+**JAR:** `medieval_factions-0.9.1-alpha.jar`  
+**SHA-256:** `12c0c6849bb083b7768855947eabd705337ec9190845ed9406f3dfb9f40f583d`
 
-## Artefacto verificado
+## Resumen ejecutivo
 
-- Archivo: `medieval_factions-0.9.1-alpha.jar`
-- Tamaño: 1.626.534 bytes
-- SHA-256: `cfaeede92cff0a4507a2c554922863fcde96d07f343e24ce2e191ae031adec26`
-- Descriptor: `modId=medieval_factions`, `version=0.9.1-alpha`
-- Dependencias declaradas: NeoForge 21.1.267+, Minecraft 1.21.1, GeckoLib 4.9.4.
+La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameTests y arranca tanto servidor dedicado como cliente headless. La selección de skins tiene sincronización cliente-servidor y persistencia por jugador; se han añadido disparadores de audio, dos habilidades, ray tracing de entidades, un panel de acceso rápido y una ruta de búsqueda indexada para datos de residentes. El panel O no es una GUI de gestión integral.
 
-## Comprobaciones de CI superadas
+## Resultado de comprobaciones
 
 | Comprobación | Resultado |
 |---|---|
-| ZIP de fuentes y extracción | PASS |
-| Parches de compatibilidad/calidad | PASS |
-| Validador de recursos | PASS — 111 JSON, 14 rigs, 0 errores |
-| Catálogo de previsualización de sonido | 75/75 PASS |
-| Pruebas de dominio | 271 aserciones PASS |
+| Build ZIP y aplicación de parches | PASS |
+| Recursos JSON | 111, cero errores y cero advertencias |
+| Geo rigs | 14 PASS |
+| SoundEvents / OGG | 75 / 75 PASS |
+| Referencias de audio en keyframes/runtime | 75/75 según auditor estático |
+| Sincronización de skins | 86/86 texturas, 14/14 checks |
+| Pruebas de dominio | 276 aserciones PASS |
 | SavedData stub smoke test | PASS, cobertura parcial |
-| Gradle `clean test build` | PASS |
+| Gradle clean test build | PASS |
 | NeoForge GameTests | PASS |
-| Descriptor y checksum del JAR | PASS |
+| Descriptor/JAR versión 0.9.1-alpha | PASS |
 | Arranque de servidor dedicado | PASS |
-| Cliente headless y recarga de recursos | PASS |
-| Capa de skin default/slim | 2/2 variantes registradas |
-| Artefacto JAR publicado | PASS |
+| Arranque de cliente y recarga de recursos | PASS |
+| Artefacto publicado | PASS |
 
-## Inventario comprobado en el JAR
+## Mejoras funcionales incluidas
 
-- 75 definiciones SoundEvent y 75 archivos OGG; ninguna referencia de `sounds.json` apunta a un archivo ausente.
-- Los 75 OGG se decodifican como Vorbis mono a 44,1 kHz; ninguno está corrupto, y las duraciones van de 0,16 a 4 s.
-- 86 texturas de skin de jugador.
-- 9 bibliotecas JSON de animación GeckoLib.
-- 14 modelos geométricos Geo.
-- El descriptor empaquetado declara exactamente `0.9.1-alpha`.
+1. Sincronización servidor-cliente y persistencia de las 86 skins. La selección se conserva en NBT por jugador, se difunde al cambiar y se reenvía al entrar/respawnear. El servidor valida índices y limita la frecuencia.
+2. Audio integrado en pasos, espada, parry, armadura, puertas, crafting, fundición, ambientes contextuales, progreso, caballo y habilidades.
+3. `elemental_burst` y `shadow_blink` con validación en servidor, costes, cooldown, daño/teletransporte seguro, partículas y sonidos.
+4. Selección de objetivos mediante ray tracing de entidades limitado por la primera colisión de bloque.
+5. Panel O con accesos a comandos existentes; CI comprueba la tecla y los comandos de destino.
+6. Lookup indexado de ciudadano por UUID para reducir trabajo repetido por entidad residente.
 
-## Cobertura honesta de sonido
+## Limitaciones y trabajo no demostrado
 
-El registro de previsualización contiene referencias a los 75 eventos, pero eso solo demuestra que un operador puede probarlos. No demuestra que todos se activen de forma natural durante el juego.
+- La sincronización de skins no se ha observado todavía con dos clientes reales y no aplica skins a NPC.
+- Los OGG se validan y el cliente headless arranca con audio nulo. Falta escuchar cada efecto, ajustar mezcla, repetición, espacialización y sincronía real.
+- La carga de recursos y el registro de capas no certifican cada animación renderizada durante combate/movimiento ni cada skin en un mundo real.
+- El panel O es un menú de acceso a comandos; faltan pantallas gráficas completas y contenedores cliente-servidor.
+- El SavedData stub no sustituye el round-trip NBT real de todos los tipos, migraciones y reinicio de mundo.
+- Falta test prolongado de servidor y profiling con 50/100/250 NPC, rutas, convoyes y batallas simultáneas.
+- Ciudad, ejército/conquista, caravanas, vuelo autónomo, vida familiar y jefes aún no forman experiencias completas de producto.
 
-La auditoría de CI se corrigió para excluir `MFSoundPreview.java` y los GameTests del cálculo. Resultado: **43/75** eventos conectados a keyframes o código de acciones de runtime; **32/75** registrados y previsualizables, pero sin disparador natural detectado. El validador enumera sus identificadores para poder priorizar su integración.
+## Auditoría técnica
 
-## Límites de lo probado
+**Defectos corregidos durante esta continuación:**
 
-- El cliente se ejecutó headless en Xvfb y con OpenAL nulo: valida inicio y carga de recursos, no escucha humana ni evaluación visual manual.
-- El smoke test de servidor valida el marcador normal de arranque, no una sesión larga ni estrés.
-- Los GameTests existentes verifican principalmente registros/constructibilidad de objetos, bloques, sonidos y tipos de entidad. No cubren todas las transacciones del mundo.
-- El test de SavedData usa stubs y no sustituye una prueba de serialización NBT real de cada tipo.
-- No se ha ejecutado una partida manual ni una sesión con dos clientes conectados.
+- El selector de objetivos usaba `ServerPlayer.pick()` como si devolviera `EntityHitResult`; se sustituyó por ray tracing de entidades que respeta los obstáculos.
+- Tres referencias locales obsoletas (`living`) se corrigieron a `livingTarget` tras detectar un fallo real de `compileJava`.
+- Los paquetes de selección de skin se procesan con `enqueueWork` en los hilos lógicos de servidor y cliente.
+- Los residentes consultan `MFWorldSavedData.citizen(UUID)` en vez de reconstruir/recorrer la lista completa cada actualización.
+- Los smoke tests de cliente/servidor terminan al alcanzar marcadores de disponibilidad.
+- El JAR debe declarar exactamente `0.9.1-alpha`; el atajo del panel se valida como tecla O (79).
 
-## Limitaciones de producto aún abiertas
-
-- Skins: selección local persistente, sin sincronización multijugador ni aplicación a residentes NPC.
-- Falta GUI gráfica completa y sincronización de datos de gestión.
-- Faltan tareas autónomas completas de NPC, constructor integral de ciudades, soldados visibles, carros físicos, mercados autónomos, vuelo autónomo de dragones y jefes únicos conectados a entidades.
-- Persisten por hacer las pruebas de mundo nuevo/existente, chunks descargados, dimensiones, migraciones, dos clientes y rendimiento con poblaciones altas.
-
-**Dictamen:** v0.9.1-alpha es una compilación funcionalmente arrancable y con recursos registrados, pero sigue siendo una alpha de integración; no es todavía la versión completa definida en el Documento Maestro.
+**Dictamen:** CI #49 acredita build, GameTests existentes y smoke startup/recarga de recursos. No acredita una partida manual completa ni el cumplimiento del Documento Maestro. El proyecto sigue siendo alpha.

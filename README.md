@@ -1,61 +1,42 @@
 # MEDIEVAL FACTIONS — v0.9.1-alpha
 
-Repositorio de fuentes y compilación para **Minecraft Java 1.21.1**, **NeoForge 21.1.267**, **Java 21** y **GeckoLib 4.9.4**.
+Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
-El proyecto se conserva en `MEDIEVAL_FACTIONS_v0_9_0_alpha.zip`. GitHub Actions verifica el archivo, lo extrae, aplica los parches de compatibilidad y calidad mantenidos en `ci/`, compila el mod y ejecuta pruebas de servidor y cliente headless.
+## Última compilación verificada
 
-## Última compilación confirmada
+**CI #49 — SUCCESS** · commit `18d7b50156ffc89256e81c32550dd0b2eb7d4811`.
 
-<badge color="success">CI #42 — SUCCESS</badge>
-
-- Commit: `947999c8b4737c9c535375a0ea0b9c6ce101951d`
 - JAR: `medieval_factions-0.9.1-alpha.jar`
-- SHA-256: `cfaeede92cff0a4507a2c554922863fcde96d07f343e24ce2e191ae031adec26`
-- Tamaño: 1.626.534 bytes
-- [Ver GitHub Actions #42 y descargar los artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45908989072)
+- SHA-256: `12c0c6849bb083b7768855947eabd705337ec9190845ed9406f3dfb9f40f583d`
+- [Ver ejecución #49 y descargar los artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45915911949)
 
-## Qué se ha comprobado
+## Funciones integradas en esta alpha
 
-- Integridad y estructura del ZIP de fuentes.
-- Java 21 y Gradle 8.12.
-- Validador de recursos: 111 JSON y 14 rigs, sin errores.
-- 75 SoundEvents registrados y 75 archivos OGG presentes; los 75 aparecen en la previsualización de operador.
-- Los 75 OGG se decodifican como Vorbis mono a 44,1 kHz; duración entre 0,16 y 4 s.
-- 271 aserciones de dominio y pruebas de persistencia con stubs.
-- `gradle clean test build`.
-- NeoForge GameTests para registros de objetos, entidades, bloques y sonidos.
-- Descriptor del mod y versión exacta `0.9.1-alpha` dentro del JAR.
-- Arranque de servidor dedicado.
-- Arranque de cliente headless, inicialización del motor de audio y recarga del ResourceManager.
-- Registro de la capa de skin para los modelos vanilla `default` y `slim`, con 86 skins disponibles.
-- El pipeline guarda también un artefacto ZIP con el código fuente ya parcheado.
+**Sincronización de skins:** 86 skins, selección persistente por jugador y sincronización servidor-cliente con actualización al entrar, respawnear y desconectarse. Está compilada y validada estáticamente; falta una sesión real de dos clientes y todavía no se aplica a NPC.
 
-## Estado real de sonido y skins
+**Audio:** 75 SoundEvents y 75 OGG validados, con referencias detectadas en keyframes o código de gameplay. Se han añadido disparadores para pasos, espada, parry, armadura, puertas, crafting, fundición, ambientes, progreso, caballo y habilidades. El cliente headless no acredita mezcla ni escucha humana.
 
-**Sonido:** los 75 eventos están registrados, todos sus archivos existen y se pueden reproducir mediante `/mf advanced sound preview <sound_id>`. La auditoría corregida excluye el catálogo de previsualización y los GameTests: **43/75** tienen un disparador en keyframes o acciones de runtime; **32/75** siguen sin disparador natural. El detalle se imprime en `tools/validate_assets.py`.
+**Mecánicas:** `elemental_burst`, `shadow_blink`, selección de objetivos mediante ray tracing de entidades que respeta obstáculos y búsqueda indexada de ciudadanos por UUID para reducir trabajo repetido por residente.
 
-**Skins:** hay 86 texturas locales. La tecla `N` cambia la skin del jugador local y guarda la selección en `config/medieval_factions_skin.txt`. La capa se registra en los dos modelos de jugador vanilla. Esta selección todavía no se sincroniza con otros jugadores y no se aplica automáticamente a residentes NPC.
+**Interfaz:** panel rápido en la tecla **O** con acceso a ficha, talentos, habilidades, compañeros, facciones, calendario, dashboard y skins. Es un panel de acceso a comandos, no una GUI integral de gestión.
 
-## Qué significa el resultado
+## Validación automatizada #49
 
-La compilación y los smoke tests demuestran que el mod puede compilarse, iniciar un servidor NeoForge, iniciar el cliente headless y cargar los recursos comprobados. No equivalen a una prueba manual completa de una partida, ni certifican la calidad auditiva humana: el cliente CI utiliza Xvfb y el driver de audio nulo.
+- 276 aserciones de dominio superadas.
+- 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG: cero errores y advertencias.
+- 86/86 skins y 14 comprobaciones de sincronización.
+- `gradle clean test build` y NeoForge GameTests: PASS.
+- Servidor dedicado y cliente headless: arranque y recarga de recursos correctos.
+- JAR `0.9.1-alpha`: descriptor e integridad verificados.
 
-## Qué sigue pendiente antes de considerarlo completo
+## Pendiente antes de una versión completa
 
-- Disparadores naturales para los 32 SoundEvents que aún solo están registrados/previsualizables.
-- Sincronización multijugador y aplicación de skins a otros jugadores/NPC.
-- GUI gráfica completa para facciones, ciudades, economía, personajes, talentos y órdenes.
-- IA social y laboral autónoma de habitantes y tareas físicas de campo.
-- Generación integral de ciudades, más blueprints y edificios funcionales.
-- Ejércitos visibles, formaciones físicas, asedios y conquista jugable.
-- Carros y escoltas como entidades, mercados autónomos y economía conectada.
-- Vuelo autónomo y ciclo vital completo de dragones.
-- Familia/medicina con interacciones y animaciones completas.
-- Jefes físicos sincronizados con sus encuentros y expediciones robustas en chunks/dimensiones.
-- Pruebas de persistencia real de todos los buckets, multijugador con dos clientes y profiling con poblaciones altas.
+- GUI gráfica de gestión para personaje, inventario, facción, ciudad, economía, diplomacia y guerra.
+- Pruebas manuales visuales/auditivas de animaciones, objetos, sonidos y skins; sesión multijugador con dos clientes.
+- Persistencia completa NBT, migraciones, mundo limpio/existente, reinicios, chunks y dimensiones.
+- IA social/laboral autónoma, navegación integral de habitantes y tareas físicas.
+- Constructor integral de ciudades, soldados y asedios visibles, carros físicos y mercados autónomos.
+- Vuelo autónomo y ciclo de vida completo de dragones, vida familiar/medicina y jefes físicos.
+- Profiling con poblaciones altas, rutas, convoyes y batallas simultáneas.
 
-## Compilar
-
-Abre [Actions](https://github.com/malg11lopez-art/med_fac/actions) y ejecuta el workflow `Build MEDIEVAL FACTIONS` con `workflow_dispatch`, o consulta la [última ejecución](https://github.com/malg11lopez-art/med_fac/actions).
-
-La versión es **alpha**. No se debe tratar como una release final hasta superar las limitaciones de la lista anterior y las puertas de calidad documentadas en el proyecto.
+**Estado:** build funcionalmente arrancable con integraciones reales, pero sigue siendo una **alpha**, no un juego terminado. El informe detallado está en `QA_STATUS_v0_9_1.md`; el paquete fuente conserva la documentación técnica en español.
