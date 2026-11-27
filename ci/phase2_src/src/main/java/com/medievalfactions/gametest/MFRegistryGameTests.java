@@ -773,6 +773,54 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", batch = "residentProfessionActions", timeoutTicks = 80)
+    public static void fisherCatchesFishAtRealWaterWorksite(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Fisher Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create fisher test faction"));
+        var settlement = world.createSettlement(faction.id(), "Harbor Village")
+                .orElseThrow(() -> new AssertionError("Could not create fisher test settlement"));
+        MFCitizenState fisher = MFCitizenState.create(faction.id(), settlement.id(), "Test Fisher",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FISHER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(fisher, faction.primaryRace()), "Could not register fisher");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        BlockPos water = standing.east();
+        helper.assertTrue(level.setBlock(water, Blocks.WATER.defaultBlockState(), 3),
+                "Could not place real water source for fishing");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(fisher.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save fisher schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not construct fisher entity");
+        if (resident == null) return;
+        resident.bindCitizen(fisher.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add fisher to test world");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(water).is(Blocks.WATER),
+                "Fishing must not consume or replace the water source");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:cod", 0L) == 1L,
+                "Fisher did not credit one cod to settlement inventory");
+        helper.assertTrue(world.citizen(fisher.id()).map(c -> c.professionXp() == 10L).orElse(false),
+                "Successful fishing did not award exactly ten profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:cod", 0L) == 1L,
+                "Repeated resident ticks duplicated the fish catch");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "residentResourceActions", timeoutTicks = 80)
     public static void lumberjackPhysicallyFellsLogAndCreditsSettlement(GameTestHelper helper) {
         var level = helper.getLevel();
