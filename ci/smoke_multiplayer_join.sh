@@ -11,7 +11,6 @@ CLIENT_LOG="${RUNNER_TEMP:-/tmp}/medieval-factions-network-client.log"
 PROJECT_DIR="$PWD"
 BUILD_FILE="$PROJECT_DIR/build.gradle"
 BUILD_BACKUP="${RUNNER_TEMP:-/tmp}/medieval-factions-network-build.gradle.bak"
-INIT_SCRIPT="${RUNNER_TEMP:-/tmp}/medieval-factions-network-client.init.gradle"
 PORT=25567
 : > "$SERVER_LOG"
 : > "$CLIENT_LOG"
@@ -44,17 +43,18 @@ cleanup() {
     cp "$BUILD_BACKUP" "$BUILD_FILE"
     rm -f "$BUILD_BACKUP"
   fi
-  rm -f "$INIT_SCRIPT"
 }
 trap cleanup EXIT INT TERM
 
-# Give the server a dedicated data directory. Give the client a separate
-# game directory and inject quick-play arguments directly into JavaExec.
+# ModDevGradle's run profile is the supported place for programArgument.
+# Do not use Gradle --args or JavaExec args: these are treated as main-class
+# arguments by the DevLaunch wrapper rather than Minecraft program arguments.
 python - "$BUILD_FILE" "$PORT" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
+port = int(sys.argv[2])
 source = path.read_text(encoding="utf-8")
 client_anchor = "        client {\n            client()\n"
 server_anchor = "        server {\n            server()\n"
@@ -62,6 +62,8 @@ client_insert = (
     "        client {\n"
     "            client()\n"
     "            gameDirectory = project.file('run/network-client')\n"
+    "            programArgument '--quickPlayMultiplayer'\n"
+    f"            programArgument '127.0.0.1:{port}'\n"
 )
 server_insert = (
     "        server {\n"
@@ -73,20 +75,8 @@ if source.count(client_anchor) != 1 or source.count(server_anchor) != 1:
 source = source.replace(client_anchor, client_insert, 1)
 source = source.replace(server_anchor, server_insert, 1)
 path.write_text(source, encoding="utf-8")
-print("Configured isolated ModDevGradle client/server game directories.")
+print("Configured isolated client/server run directories and client quick-play program arguments.")
 PY
-
-cat > "$INIT_SCRIPT" <<GRADLE
-allprojects {
-    tasks.matching { it.name == 'runClient' }.configureEach {
-        args '--quickPlayMultiplayer', '127.0.0.1:$PORT'
-        doFirst {
-            println 'MEDIEVAL FACTIONS NETWORK SMOKE: launching quick-play client at 127.0.0.1:$PORT'
-            println "MEDIEVAL FACTIONS NETWORK SMOKE: runClient args = " + args
-        }
-    }
-}
-GRADLE
 
 SERVER_DIR="$PROJECT_DIR/run/network-server"
 mkdir -p "$SERVER_DIR" "$PROJECT_DIR/run/network-client"
@@ -125,16 +115,18 @@ if ! grep -Fq "Starting Minecraft server on 127.0.0.1:$PORT" "$SERVER_LOG" \
   exit 1
 fi
 
-setsid env ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 xvfb-run -a gradle --init-script "$INIT_SCRIPT" --no-daemon runClient > "$CLIENT_LOG" 2>&1 &
+setsid env ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 xvfb-run -a gradle --no-daemon runClient > "$CLIENT_LOG" 2>&1 &
 CLIENT_PID=$!
 JOINED=0
 SKIN_ACCEPTED=0
 SKIN_RECEIVED=0
 CLIENT_READY=0
+QUICKPLAY_ARGS=0
 
 for _ in $(seq 1 180); do
   grep -Fq 'Sound engine started' "$CLIENT_LOG" && CLIENT_READY=1 || true
-  grep -Fq 'joined the game' "$SERVER_LOG" && JOINED=1 || true
+  grep -Fq -- '--quickPlayMultiplayer' "$CLIENT_LOG" && QUICKPLAY_ARGS=1 || true
+  grep -Eq 'joined the game|logged in with entity id' "$SERVER_LOG" && JOINED=1 || true
   grep -Fq 'MF_SKIN_SELECTION_ACCEPTED' "$SERVER_LOG" && SKIN_ACCEPTED=1 || true
   grep -Fq 'MF_SKIN_SYNC_RECEIVED' "$CLIENT_LOG" && SKIN_RECEIVED=1 || true
   if [ "$JOINED" -eq 1 ] && [ "$SKIN_ACCEPTED" -eq 1 ] && [ "$SKIN_RECEIVED" -eq 1 ]; then
@@ -156,6 +148,10 @@ cat "$CLIENT_LOG"
 
 if [ "$CLIENT_READY" -ne 1 ]; then
   echo "::error::Headless client did not initialize its sound engine."
+  exit 1
+fi
+if [ "$QUICKPLAY_ARGS" -ne 1 ]; then
+  echo "::error::ModDevGradle did not pass the quick-play arguments into the Minecraft launch."
   exit 1
 fi
 if [ "$JOINED" -ne 1 ]; then
