@@ -82,6 +82,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
             // Work orders begin only at a compatible, physically present station.
             // Waypoints may identify the workstation block itself or the standing
             // position one block above it.
+            boolean workStartedAtStation = false;
             if (plan.activity() == MFCitizenSimulation.Activity.WORK) {
                 String stationAtTarget = BuiltInRegistries.BLOCK.getKey(
                         serverLevel.getBlockState(target).getBlock()).toString();
@@ -90,11 +91,15 @@ public final class MFResidentEntity extends MFAnimatedMob {
                 if (started.isEmpty()) {
                     String stationBelow = BuiltInRegistries.BLOCK.getKey(
                             serverLevel.getBlockState(target.below()).getBlock()).toString();
-                    data.startResidentWorkOrder(
+                    started = data.startResidentWorkOrder(
                             worldData, citizenId, stationBelow, worldData.simulatedDays());
                 }
+                workStartedAtStation = started.isPresent();
             }
-            setActionTrigger(actionFor(plan.activity(), citizen.profession()));
+            // Do not play a profession-work animation unless a compatible, stocked
+            // workstation accepted the job. Other activities animate at their destination.
+            setActionTrigger(plan.activity() == MFCitizenSimulation.Activity.WORK && !workStartedAtStation
+                    ? null : actionFor(plan.activity(), citizen.profession()));
             data.reportResidentWaypointArrival(serverLevel, citizenId);
             return;
         }
