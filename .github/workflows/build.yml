@@ -70,6 +70,7 @@ jobs:
             --exclude build/ \
             --exclude .gradle/ \
             --exclude .idea/ \
+            --exclude .github/ \
             --exclude .git/ \
             "$PROJECT_DIR/" "$SNAPSHOT_DIR/"
           git config user.name "github-actions[bot]"
@@ -77,6 +78,7 @@ jobs:
           git switch --orphan work/phase2-source-snapshot
           git rm -rf . >/dev/null 2>&1 || true
           cp -a "$SNAPSHOT_DIR/." .
+          rm -rf .github
           git add -A
           git commit -m "build: export patched source snapshot for phase implementation"
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/work/phase2-source-snapshot
