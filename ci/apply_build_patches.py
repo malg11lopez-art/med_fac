@@ -374,4 +374,25 @@ elif overlay_parts:
 else:
     raise SystemExit("Multiplayer skin/audio overlay bundle is missing.")
 
+# The combat simulator target adapter must use the entity reference that replaced
+# ServerPlayer.pick() above; pick() returns a block hit, not an EntityHitResult.
+# Keep this compatibility correction idempotent so a future source ZIP may
+# include it directly without making the overlay fail.
+advanced_commands = root / "command/MFAdvancedCommands.java"
+advanced_text = advanced_commands.read_text(encoding="utf-8")
+for old, new in (
+    ("Math.ceil(living.getHealth())", "Math.ceil(livingTarget.getHealth())"),
+    ("Math.ceil(living.getMaxHealth())", "Math.ceil(livingTarget.getMaxHealth())"),
+    ("new Combatant(living.getUUID(), CombatClass.WARRIOR", "new Combatant(livingTarget.getUUID(), CombatClass.WARRIOR"),
+):
+    count = advanced_text.count(old)
+    if count == 1:
+        advanced_text = advanced_text.replace(old, new, 1)
+    elif count == 0 and new in advanced_text:
+        continue
+    else:
+        raise SystemExit(f"Combat target adapter patch precondition failed: {old}")
+advanced_commands.write_text(advanced_text, encoding="utf-8")
+print("Verified combat target adapter uses the server-raytraced livingTarget.")
+
 print("All CI compile and packaging patches applied successfully.")
