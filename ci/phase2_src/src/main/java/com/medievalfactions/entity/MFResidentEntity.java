@@ -6,6 +6,9 @@ import com.medievalfactions.domain.MFCitizenState;
 import com.medievalfactions.domain.MFGameCatalog.Profession;
 import com.medievalfactions.data.MFWorldSavedData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Items;
 import net.minecraft.nbt.CompoundTag;
@@ -25,6 +28,8 @@ import java.util.UUID;
 
 /** Visible resident linked to a persistent citizen record; server plans drive vanilla path navigation. */
 public final class MFResidentEntity extends MFAnimatedMob {
+    private static final EntityDataAccessor<Integer> VISUAL_ROLE =
+            SynchedEntityData.defineId(MFResidentEntity.class, EntityDataSerializers.INT);
     private UUID citizenId;
     private BlockPos lastNavigationTarget;
     private String activeActionTrigger;
@@ -39,6 +44,31 @@ public final class MFResidentEntity extends MFAnimatedMob {
         setPersistenceRequired();
     }
     public UUID citizenId() { return citizenId; }
+
+    /** Synchronized presentation key; authoritative profession remains in SavedData. */
+    public int visualRole() { return getEntityData().get(VISUAL_ROLE); }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(VISUAL_ROLE, 0);
+    }
+
+    private static int visualRoleFor(Profession profession) {
+        if (profession == null) return 0;
+        return switch (profession) {
+            case FARMER, RANCHER, SHEPHERD, HORSE_BREEDER, APICULTURIST -> 1;
+            case BLACKSMITH, ARMORER, SMELTER, MASON, ENGINEER -> 2;
+            case LIBRARIAN, SCRIBE, TEACHER, RESEARCHER, CARTOGRAPHER, ARCANE_RESEARCHER,
+                    ELEMENTAL_MASTER, MAGICAL_ARTISAN -> 3;
+            case DOCTOR, SURGEON, VETERINARIAN, PRIEST -> 4;
+            case TRADER, APPRAISER, WHOLESALER, BANKER, TREASURER, MINT_MASTER,
+                    ACCOUNTANT, TAX_COLLECTOR, LENDER, AUCTIONEER, TRANSPORTER,
+                    CARAVANER, MESSENGER -> 5;
+            case GUARD, CAPTAIN -> 6;
+            default -> 0;
+        };
+    }
 
     @Override protected String idleAnimation() { return "animation.guard.idle"; }
     @Override protected String walkAnimation() { return "animation.guard.walk"; }
@@ -66,6 +96,10 @@ public final class MFResidentEntity extends MFAnimatedMob {
         var data = MFAdvancedSavedData.get(serverLevel.getServer());
         MFWorldSavedData worldData = MFWorldSavedData.get(serverLevel.getServer());
         MFCitizenState citizen = worldData.citizen(citizenId).orElse(null);
+        if (citizen != null) {
+            int role = visualRoleFor(citizen.profession());
+            if (getEntityData().get(VISUAL_ROLE) != role) getEntityData().set(VISUAL_ROLE, role);
+        }
         var plan = data.record("citizen_plans", citizenId, MFCitizenSimulation.CitizenPlan.class).orElse(null);
         if (plan == null || citizen == null || citizen.status() != com.medievalfactions.domain.MFGameCatalog.CitizenStatus.ACTIVE) {
             getNavigation().stop(); lastNavigationTarget = null; setActionTrigger(null); return;
