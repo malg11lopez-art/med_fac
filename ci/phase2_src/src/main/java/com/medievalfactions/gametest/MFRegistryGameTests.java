@@ -239,6 +239,12 @@ public final class MFRegistryGameTests {
                 "A stone block was incorrectly accepted as a carpentry station");
         helper.assertTrue(MFWorkstationRules.supports("cut_planks", "minecraft:crafting_table"),
                 "Crafting table was not accepted for cut_planks");
+        helper.assertTrue(MFWorkstationRules.supports("smelt_iron", "minecraft:blast_furnace"),
+                "Blast furnace was not accepted for smelt_iron");
+        helper.assertTrue(MFWorkstationRules.supports("forge_iron_sword", "medieval_factions:blacksmith_anvil"),
+                "Registered blacksmith anvil was not accepted for forging");
+        helper.assertTrue(!MFWorkstationRules.supports("recipe_not_registered", "minecraft:crafting_table"),
+                "Unknown recipes must not accept arbitrary stations");
         helper.assertTrue(advanced.startResidentWorkOrder(world, firstWorker.id(), "minecraft:stone", 1L).isEmpty(),
                 "Resident started work at an incompatible block");
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
