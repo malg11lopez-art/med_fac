@@ -28,6 +28,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
     private UUID citizenId;
     private BlockPos lastNavigationTarget;
     private String activeActionTrigger;
+    private long lastSocialInteractionTick = -1L;
 
     public MFResidentEntity(EntityType<? extends MFResidentEntity> type, Level level) { super(type, level); }
 
@@ -70,9 +71,31 @@ public final class MFResidentEntity extends MFAnimatedMob {
         }
         if (plan.activity() == MFCitizenSimulation.Activity.SOCIALIZE) {
             var neighbours = serverLevel.getEntitiesOfClass(MFResidentEntity.class, getBoundingBox().inflate(8.0D),
-                    other -> other != this && other.citizenId != null);
-            MFResidentEntity neighbour = neighbours.stream().min(java.util.Comparator.comparingDouble(this::distanceToSqr)).orElse(null);
-            if (neighbour != null) getLookControl().setLookAt(neighbour, 10.0F, 40.0F);
+                    other -> other != this && other.citizenId != null
+                            && worldData.citizen(other.citizenId)
+                            .map(otherCitizen -> otherCitizen.status()
+                                    == com.medievalfactions.domain.MFGameCatalog.CitizenStatus.ACTIVE
+                                    && otherCitizen.settlementId().equals(citizen.settlementId()))
+                            .orElse(false));
+            MFResidentEntity neighbour = neighbours.stream()
+                    .min(java.util.Comparator.comparingDouble(this::distanceToSqr)).orElse(null);
+            if (neighbour != null) {
+                getLookControl().setLookAt(neighbour, 10.0F, 40.0F);
+                long now = serverLevel.getGameTime();
+                boolean cooldownElapsed = lastSocialInteractionTick < 0L
+                        || now < lastSocialInteractionTick || now - lastSocialInteractionTick >= 600L;
+                // Only the lower UUID initiates the pair interaction, avoiding duplicate rewards
+                // when both residents process their SOCIALIZE schedule in the same server tick.
+                if (citizenId.compareTo(neighbour.citizenId) < 0 && cooldownElapsed
+                        && worldData.socializeCitizens(citizenId, neighbour.citizenId, 1)) {
+                    lastSocialInteractionTick = now;
+                    serverLevel.playSound(null, blockPosition(), net.minecraft.sounds.SoundEvents.VILLAGER_YES,
+                            net.minecraft.sounds.SoundSource.NEUTRAL, 0.42F,
+                            0.96F + getRandom().nextFloat() * 0.08F);
+                    serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                            getX(), getY() + 1.0D, getZ(), 2, 0.22D, 0.18D, 0.22D, 0.01D);
+                }
+            }
         }
         MFCitizenSimulation.Waypoint destination = plan.destination();
         if (!serverLevel.dimension().location().toString().equals(destination.dimension())) {
@@ -212,6 +235,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
     @Override public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         if (citizenId != null) tag.putUUID("mf_citizen_id", citizenId);
+        tag.putLong("mf_last_social_tick", lastSocialInteractionTick);
     }
 
     @Override public void readAdditionalSaveData(CompoundTag tag) {
@@ -219,5 +243,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
         citizenId = tag.hasUUID("mf_citizen_id") ? tag.getUUID("mf_citizen_id") : null;
         lastNavigationTarget = null;
         activeActionTrigger = null;
+        lastSocialInteractionTick = tag.contains("mf_last_social_tick", net.minecraft.nbt.Tag.TAG_LONG)
+                ? tag.getLong("mf_last_social_tick") : -1L;
     }
 }
