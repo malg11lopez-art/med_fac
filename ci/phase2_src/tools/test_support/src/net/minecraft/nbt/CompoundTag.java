@@ -19,6 +19,8 @@ public final class CompoundTag implements Tag {
     public void putBoolean(String key, boolean value) { values.put(key, value); }
     public boolean getBoolean(String key) { Object value = values.get(key); return value instanceof Boolean b && b; }
     public void put(String key, Tag value) { values.put(key, value); }
+    public CompoundTag getCompound(String key) { Object value = values.get(key); return value instanceof CompoundTag tag ? tag : new CompoundTag(); }
+    public java.util.Set<String> getAllKeys() { return java.util.Set.copyOf(values.keySet()); }
     public ListTag getList(String key, int ignoredType) { Object value = values.get(key); return value instanceof ListTag list ? list : new ListTag(); }
     public boolean contains(String key) { return values.containsKey(key); }
     public boolean contains(String key, int type) {
