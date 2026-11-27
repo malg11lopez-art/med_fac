@@ -773,6 +773,55 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", batch = "zzResidentAnimalWork", timeoutTicks = 80)
+    public static void shepherdShearsNearbySheepAndStoresWool(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Shepherd Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create shepherd test faction"));
+        var settlement = world.createSettlement(faction.id(), "Sheep Pasture")
+                .orElseThrow(() -> new AssertionError("Could not create shepherd test settlement"));
+        MFCitizenState shepherd = MFCitizenState.create(faction.id(), settlement.id(), "Test Shepherd",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.SHEPHERD, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(shepherd, faction.primaryRace()), "Could not register shepherd");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        var sheep = net.minecraft.world.entity.EntityType.SHEEP.create(level);
+        helper.assertTrue(sheep != null, "Could not create test sheep");
+        if (sheep == null) return;
+        sheep.setPos(standing.getX() + 1.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(sheep), "Could not add test sheep");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(shepherd.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save shepherd schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not create shepherd resident");
+        if (resident == null) return;
+        resident.bindCitizen(shepherd.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add shepherd resident");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(sheep.isSheared(), "Shepherd did not shear the nearby sheep");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:white_wool", 0L) == 1L,
+                "Sheared wool was not credited to the settlement store");
+        helper.assertTrue(world.citizen(shepherd.id()).map(citizen -> citizen.professionXp() == 10L).orElse(false),
+                "Successful shearing did not award exactly ten profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:white_wool", 0L) == 1L,
+                "Repeated resident ticks duplicated the same fleece");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "zResidentProfessionActions", timeoutTicks = 80)
     public static void fisherCatchesFishAtRealWaterWorksite(GameTestHelper helper) {
         var level = helper.getLevel();
