@@ -252,6 +252,29 @@ public final class MFWorldSavedData extends SavedData {
     }
 
     /**
+     * Consumes one real settlement ration to feed an active resident.
+     * Hunger, health, satisfaction and stored food are committed together.
+     */
+    public synchronized boolean feedResident(UUID settlementId, UUID citizenId) {
+        MFSettlementState settlement = settlements.get(settlementId);
+        MFCitizenState citizen = citizens.get(citizenId);
+        if (settlement == null || citizen == null || !settlement.id().equals(citizen.settlementId())
+                || !settlement.factionId().equals(citizen.factionId())
+                || citizen.status() != CitizenStatus.ACTIVE
+                || citizen.ageStage() == AgeStage.BABY || citizen.ageStage() == AgeStage.CHILD
+                || citizen.hunger() < 20 || settlement.foodRations() < 1L) return false;
+
+        MFCitizenState fed = citizen.withHealthAndHunger(
+                Math.min(100, citizen.health() + 1), Math.max(0, citizen.hunger() - 35));
+        MFCitizenState rewarded = withSocialSatisfaction(fed, 2);
+        MFSettlementState updatedSettlement = settlement.withFoodRations(settlement.foodRations() - 1L);
+        settlements.put(settlementId, updatedSettlement);
+        citizens.put(citizenId, rewarded);
+        setDirty();
+        return true;
+    }
+
+    /**
      * Applies one nearby social interaction to two active residents in the same settlement.
      * Both satisfaction updates are committed together; cross-settlement interactions are rejected.
      */
