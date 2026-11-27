@@ -290,6 +290,36 @@ public final class MFWorldSavedData extends SavedData {
     }
 
     /**
+     * Credits one fish caught by a working fisher. Output and profession XP are one transaction;
+     * only the fisher profession may create raw fish products through this path.
+     */
+    public synchronized boolean creditResidentFish(UUID settlementId, UUID citizenId,
+                                                     String fishItemId, long amount, long professionXp) {
+        MFSettlementState settlement = settlements.get(settlementId);
+        MFCitizenState fisher = citizens.get(citizenId);
+        if (settlement == null || fisher == null || !settlement.id().equals(fisher.settlementId())
+                || !settlement.factionId().equals(fisher.factionId())
+                || fisher.profession() != Profession.FISHER || fisher.status() != CitizenStatus.ACTIVE
+                || fisher.ageStage() == AgeStage.BABY || fisher.ageStage() == AgeStage.CHILD
+                || amount <= 0L || amount > 8L || professionXp <= 0L || professionXp > 1_000L
+                || !Set.of("minecraft:cod", "minecraft:salmon", "minecraft:tropical_fish",
+                        "minecraft:pufferfish").contains(fishItemId)
+                || !settlement.canAccept(fishItemId, amount)) return false;
+        LinkedHashMap<String, Long> nextStock = new LinkedHashMap<>(settlement.inventory());
+        MFCitizenState nextFisher;
+        try {
+            nextStock.merge(fishItemId, amount, Math::addExact);
+            nextFisher = fisher.awardProfessionXp(professionXp);
+        } catch (ArithmeticException ex) {
+            return false;
+        }
+        settlements.put(settlementId, settlement.withInventory(nextStock));
+        citizens.put(citizenId, nextFisher);
+        setDirty();
+        return true;
+    }
+
+    /**
      * Atomically consumes one seed from a farmer's own settlement store.
      * The caller debits before placement and refunds the seed if the world edit fails.
      */
