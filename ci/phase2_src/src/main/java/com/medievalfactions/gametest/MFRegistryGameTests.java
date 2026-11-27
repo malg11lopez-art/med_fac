@@ -811,6 +811,76 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", timeoutTicks = 80)
+    public static void residentFarmerPlantsCropUsingSettlementSeeds(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+
+        UUID founder = UUID.randomUUID();
+        var faction = factions.createFaction("Planter Test", founder, MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create planter test faction"));
+        var settlement = world.createSettlement(faction.id(), "Seed Fields")
+                .orElseThrow(() -> new AssertionError("Could not create planter test settlement"));
+        helper.assertTrue(world.addSettlementFood(settlement.id(), 30L), "Could not provide farmer food");
+        helper.assertTrue(world.replaceSettlement(world.settlement(settlement.id()).orElseThrow()
+                .withSecurityAndInfrastructure(80, 50)), "Could not secure planter test settlement");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:wheat_seeds", 1L),
+                "Could not stock one wheat seed for the farmer");
+
+        MFCitizenState farmer = MFCitizenState.create(faction.id(), settlement.id(), "Seed Planter",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FARMER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(farmer, faction.primaryRace()), "Could not register planter");
+
+        BlockPos farmland = helper.absolutePos(new BlockPos(2, 3, 2));
+        BlockPos crop = farmland.above();
+        BlockPos standing = crop.above();
+        helper.assertTrue(level.setBlock(farmland, Blocks.FARMLAND.defaultBlockState(), 3),
+                "Could not place planter farmland");
+        helper.assertTrue(level.getBlockState(crop).isAir(), "Planter crop space must start empty");
+
+        String dimension = level.dimension().location().toString();
+        var schedule = new MFCitizenSimulation.CitizenSchedule(farmer.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(dimension,
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
+                "Could not save planter work schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
+                        MFCitizenSimulation.CitizenPlan.class)
+                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK).orElse(false),
+                "Daily scheduler did not create planter work plan");
+
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not construct planter resident entity");
+        if (resident == null) return;
+        resident.bindCitizen(farmer.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add planter resident to GameTest world");
+
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(crop).is(Blocks.WHEAT),
+                "Farmer did not plant wheat on the empty farmland");
+        helper.assertTrue(level.getBlockState(crop).getValue(CropBlock.AGE) == 0,
+                "Newly planted wheat must start at age zero");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:wheat_seeds", 0L) == 0L,
+                "Planting did not consume exactly one settlement seed");
+
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(crop).is(Blocks.WHEAT)
+                        && world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:wheat_seeds", 0L) == 0L,
+                "Repeated resident ticks duplicated or removed the planted crop");
+        helper.succeed();
+    }
+
     private static boolean rejectsSchema(Runnable loader) {
         try {
             loader.run();
