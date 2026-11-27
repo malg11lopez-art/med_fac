@@ -22,6 +22,7 @@ import com.medievalfactions.registry.MFEntities;
 import com.medievalfactions.registry.MFItems;
 import com.medievalfactions.registry.MFSounds;
 import com.medievalfactions.item.MFPotionItem;
+import com.medievalfactions.network.MFManagementAccessRules;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -52,6 +53,21 @@ import java.util.UUID;
 @GameTestHolder(MedievalFactions.MOD_ID)
 public final class MFRegistryGameTests {
     private MFRegistryGameTests() {}
+
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void managementDashboardAccessAndThrottleAreEnforced(GameTestHelper helper) {
+        helper.assertTrue(MFManagementAccessRules.canViewGlobalDashboard(true),
+                "Operators must retain access to the global management dashboard");
+        helper.assertTrue(!MFManagementAccessRules.canViewGlobalDashboard(false),
+                "Non-operators must not receive world-wide faction and settlement data");
+        helper.assertTrue(MFManagementAccessRules.mayRequest(100L, 95L),
+                "A new dashboard request must be accepted after the five-tick cooldown");
+        helper.assertTrue(!MFManagementAccessRules.mayRequest(99L, 95L),
+                "Dashboard requests inside the cooldown must be rejected");
+        helper.assertTrue(MFManagementAccessRules.mayRequest(94L, 95L),
+                "A server time rollback must not lock dashboard access");
+        helper.succeed();
+    }
 
     @GameTest(template = "empty", timeoutTicks = 20)
     public static void allItemsHaveRuntimeRegistrations(GameTestHelper helper) {
