@@ -335,7 +335,9 @@ public final class MFRegistryGameTests {
         // a minute plan from the saved schedule before the entity arrives.
         advanced.advanceToDay(world, factions, 0L);
         advanced.advanceToDay(world, factions, 1L);
-        helper.assertTrue(advanced.updateScheduledNpcPlans(world, 0) == 1,
+        advanced.updateScheduledNpcPlans(world, 0);
+        helper.assertTrue(advanced.record("citizen_plans", worker.id(),
+                        MFCitizenSimulation.CitizenPlan.class).isPresent(),
                 "Scheduled plan was not generated for the materialized resident");
         helper.assertTrue(advanced.record("citizen_plans", worker.id(),
                         MFCitizenSimulation.CitizenPlan.class)
@@ -409,7 +411,10 @@ public final class MFRegistryGameTests {
                 "Could not save farmer work schedule");
         advanced.advanceToDay(world, factions, 0L);
         advanced.advanceToDay(world, factions, 1L);
-        helper.assertTrue(advanced.updateScheduledNpcPlans(world, 0) == 1,
+        advanced.updateScheduledNpcPlans(world, 0);
+        helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
+                        MFCitizenSimulation.CitizenPlan.class)
+                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK).orElse(false),
                 "Daily scheduler did not create farmer work plan");
 
         MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
