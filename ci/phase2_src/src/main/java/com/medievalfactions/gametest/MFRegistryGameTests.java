@@ -25,6 +25,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.item.ArrowItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -367,6 +368,68 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.workOrders(settlement.id()).stream()
                         .filter(order -> order.workerId().equals(worker.id()) && order.active()).count() == 1L,
                 "Repeated physical station ticks created duplicate production orders");
+        helper.succeed();
+    }
+
+
+    /** A resident farmer harvests a mature crop at the scheduled field waypoint exactly once. */
+    @GameTest(template = "empty", timeoutTicks = 80)
+    public static void residentFarmerHarvestsMatureCropIntoSettlementStock(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+
+        UUID founder = UUID.randomUUID();
+        var faction = factions.createFaction("Farmer Test", founder, MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create farmer test faction"));
+        var settlement = world.createSettlement(faction.id(), "Harvest Fields")
+                .orElseThrow(() -> new AssertionError("Could not create farmer test settlement"));
+        helper.assertTrue(world.addSettlementFood(settlement.id(), 30L), "Could not provide farmer food");
+        helper.assertTrue(world.replaceSettlement(world.settlement(settlement.id()).orElseThrow()
+                .withSecurityAndInfrastructure(80, 50)), "Could not secure farmer test settlement");
+
+        MFCitizenState farmer = MFCitizenState.create(faction.id(), settlement.id(), "Mature Crop Farmer",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FARMER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(farmer, faction.primaryRace()), "Could not register farmer");
+
+        BlockPos crop = helper.absolutePos(new BlockPos(2, 2, 2));
+        BlockPos standing = crop.above();
+        level.setBlock(crop.below(), Blocks.FARMLAND.defaultBlockState(), 3);
+        level.setBlock(crop, Blocks.CARROTS.defaultBlockState().setValue(CropBlock.AGE, 7), 3);
+
+        String dimension = level.dimension().location().toString();
+        var schedule = new MFCitizenSimulation.CitizenSchedule(farmer.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(dimension,
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
+                "Could not save farmer work schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        helper.assertTrue(advanced.updateScheduledNpcPlans(world, 0) == 1,
+                "Daily scheduler did not create farmer work plan");
+
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not construct farmer resident entity");
+        if (resident == null) return;
+        resident.bindCitizen(farmer.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add farmer entity to GameTest world");
+
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(crop).getValue(CropBlock.AGE) == 0,
+                "Mature crop was not replanted to age zero after harvest");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:carrot", 0L) == 2L,
+                "Harvest output was not credited to settlement inventory");
+
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:carrot", 0L) == 2L,
+                "Repeated resident ticks duplicated the same crop harvest");
         helper.succeed();
     }
 
