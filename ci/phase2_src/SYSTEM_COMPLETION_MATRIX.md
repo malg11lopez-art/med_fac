@@ -27,20 +27,20 @@ Esta matriz describe el código que existe en esta entrega y, por separado, la e
 - **Implementado en dominio:** reglas deterministas cubiertas por pruebas unitarias propias.
 - **Persistido:** datos se guardan en registros del SavedData avanzado; todavía debe probarse serialización real de esos nuevos tipos en Minecraft.
 - **Conectado al mundo:** hay entidad/bloque/inventario/ubicación real que participa en el flujo.
-- **Verificado in-game:** solo se marca después de `runClient`/`runServer`, pruebas de mundo y persistencia real. CI #50 ya compila NeoForge, ejecuta GameTests y arranca servidor dedicado y cliente headless. Esto acredita inicialización y recarga de recursos, no una partida manual ni una evaluación visual/auditiva humana.
+- **Verificado in-game:** solo se marca después de `runClient`/`runServer`, pruebas de mundo y persistencia real. CI #90 compila NeoForge, ejecuta cinco GameTests (incluyendo NBT real y reanudación de producción) y arranca servidor dedicado/cliente headless con una conexión real. Esto acredita esos contratos de integración, no una partida manual ni una evaluación visual/auditiva humana.
 
 ## Cambios transversales de v0.9.1-alpha
 
 - El scheduler de servidor mantiene el contador de ticks y minuto por instancia de `MinecraftServer`; no comparte estado entre mundos integrados.
 - La carga/guardado NBT de registros avanzados aplica límites por bucket, registro y presupuesto total; los registros individuales corruptos se descartan sin abortar toda la carga.
 - El guardia y el dragón sin jinete tienen combate melee básico contra monstruos; esto no constituye IA militar ni vuelo autónomo.
-- Las pruebas de dominio suman 276 aserciones. La persistencia NBT round-trip de todos los tipos, la sesión de dos clientes y el profiling de población alta siguen pendientes.
+- Las pruebas de dominio suman 276 aserciones. La cobertura NBT real sigue siendo representativa, no exhaustiva para todos los tipos; la sesión de dos clientes y el profiling de población alta siguen pendientes.
 
 
-### Cambios transversales verificados en CI #50
+### Cambios transversales verificados en CI #90
 
 - Skins: sincronización servidor-cliente, validación de índices 0..85, persistencia de jugador, carga al entrar/respawnear y limpieza al desconectar. Falta prueba de dos clientes y aplicación a NPC.
 - Audio: 75/75 eventos referenciados por keyframes o runtime; los OGG se validan, pero falta escucha humana y ajuste de mezcla.
 - Habilidades: elemental_burst y shadow_blink integradas con coste/cooldown y validación en servidor.
-- Residentes: consulta indexada de ciudadano por UUID; falta profiling de carga real.
+- Residentes: consulta indexada de ciudadano por UUID y asignación diaria de recetas con reserva de inventario; GameTest valida deduplicación y rechazo de trabajos sin materiales. Falta estación física/IA de recolección y profiling de carga real.
 - Interfaz: panel rápido de tecla O; no equivale a GUI de gestión.
