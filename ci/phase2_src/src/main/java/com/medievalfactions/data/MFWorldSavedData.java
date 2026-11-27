@@ -221,6 +221,36 @@ public final class MFWorldSavedData extends SavedData {
         return true;
     }
 
+    /**
+     * Credits a real farmer harvest and its profession experience as one persistent transaction.
+     * If the worker, settlement, item or inventory capacity is invalid, neither record changes.
+     */
+    public synchronized boolean creditResidentHarvest(UUID settlementId, UUID citizenId,
+                                                        String itemId, long amount, long professionXp) {
+        MFSettlementState settlement = settlements.get(settlementId);
+        MFCitizenState farmer = citizens.get(citizenId);
+        if (settlement == null || farmer == null || !settlement.id().equals(farmer.settlementId())
+                || !settlement.factionId().equals(farmer.factionId())
+                || farmer.profession() != Profession.FARMER || farmer.status() != CitizenStatus.ACTIVE
+                || farmer.ageStage() == AgeStage.BABY || farmer.ageStage() == AgeStage.CHILD
+                || amount <= 0L || amount > 64L || professionXp <= 0L || professionXp > 1_000L
+                || !java.util.Set.of("minecraft:wheat", "minecraft:carrot", "minecraft:potato",
+                        "minecraft:beetroot").contains(itemId)
+                || !settlement.canAccept(itemId, amount)) return false;
+        LinkedHashMap<String, Long> nextStock = new LinkedHashMap<>(settlement.inventory());
+        MFCitizenState nextFarmer;
+        try {
+            nextStock.merge(itemId, amount, Math::addExact);
+            nextFarmer = farmer.awardProfessionXp(professionXp);
+        } catch (ArithmeticException ex) {
+            return false;
+        }
+        settlements.put(settlementId, settlement.withInventory(nextStock));
+        citizens.put(citizenId, nextFarmer);
+        setDirty();
+        return true;
+    }
+
     public synchronized boolean adjustSettlementTreasury(UUID settlementId, long deltaCopper) {
         MFSettlementState current = settlements.get(settlementId);
         if (current == null) return false;
