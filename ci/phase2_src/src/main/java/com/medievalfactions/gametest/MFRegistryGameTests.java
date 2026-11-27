@@ -338,10 +338,12 @@ public final class MFRegistryGameTests {
         helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
                 "Could not persist resident's physical workstation schedule");
 
-        // Match the real server order: advance the advanced-data day, then derive
-        // a minute plan from the saved schedule before the entity arrives.
-        advanced.advanceToDay(world, factions, 0L);
-        advanced.advanceToDay(world, factions, 1L);
+        // Verify the citizen and timetable before evaluating the minute plan.
+        helper.assertTrue(world.citizen(worker.id()).filter(c -> c.status() == MFGameCatalog.CitizenStatus.ACTIVE).isPresent(),
+                "Carpenter must remain an active citizen before planning");
+        helper.assertTrue(advanced.record("citizen_schedules", worker.id(),
+                        MFCitizenSimulation.CitizenSchedule.class).isPresent(),
+                "Resident schedule was not persisted");
         helper.assertTrue(advanced.updateScheduledNpcPlans(world, 0) == 1,
                 "Scheduled plan was not generated for the materialized resident");
         helper.assertTrue(advanced.record("citizen_plans", worker.id(),
