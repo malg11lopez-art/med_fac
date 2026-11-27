@@ -7,6 +7,7 @@ import com.medievalfactions.domain.MFGameCatalog.Profession;
 import com.medievalfactions.data.MFWorldSavedData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
@@ -15,6 +16,8 @@ import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CropBlock;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.RawAnimation;
 
@@ -82,23 +85,27 @@ public final class MFResidentEntity extends MFAnimatedMob {
             // Work orders begin only at a compatible, physically present station.
             // Waypoints may identify the workstation block itself or the standing
             // position one block above it.
-            boolean workStartedAtStation = false;
+            boolean workActionCompleted = false;
             if (plan.activity() == MFCitizenSimulation.Activity.WORK) {
-                String stationAtTarget = BuiltInRegistries.BLOCK.getKey(
-                        serverLevel.getBlockState(target).getBlock()).toString();
-                var started = data.startResidentWorkOrder(
-                        worldData, citizenId, stationAtTarget, worldData.simulatedDays());
-                if (started.isEmpty()) {
-                    String stationBelow = BuiltInRegistries.BLOCK.getKey(
-                            serverLevel.getBlockState(target.below()).getBlock()).toString();
-                    started = data.startResidentWorkOrder(
-                            worldData, citizenId, stationBelow, worldData.simulatedDays());
+                if (citizen.profession() == Profession.FARMER) {
+                    workActionCompleted = harvestMatureCrop(serverLevel, worldData, citizen, target)
+                            || harvestMatureCrop(serverLevel, worldData, citizen, target.below());
+                } else {
+                    String stationAtTarget = BuiltInRegistries.BLOCK.getKey(
+                            serverLevel.getBlockState(target).getBlock()).toString();
+                    var started = data.startResidentWorkOrder(
+                            worldData, citizenId, stationAtTarget, worldData.simulatedDays());
+                    if (started.isEmpty()) {
+                        String stationBelow = BuiltInRegistries.BLOCK.getKey(
+                                serverLevel.getBlockState(target.below()).getBlock()).toString();
+                        started = data.startResidentWorkOrder(
+                                worldData, citizenId, stationBelow, worldData.simulatedDays());
+                    }
+                    workActionCompleted = started.isPresent();
                 }
-                workStartedAtStation = started.isPresent();
             }
-            // Do not play a profession-work animation unless a compatible, stocked
-            // workstation accepted the job. Other activities animate at their destination.
-            setActionTrigger(plan.activity() == MFCitizenSimulation.Activity.WORK && !workStartedAtStation
+            // Work animations run only after a real crop harvest or accepted station job.
+            setActionTrigger(plan.activity() == MFCitizenSimulation.Activity.WORK && !workActionCompleted
                     ? null : actionFor(plan.activity(), citizen.profession()));
             data.reportResidentWaypointArrival(serverLevel, citizenId);
             return;
@@ -111,6 +118,46 @@ public final class MFResidentEntity extends MFAnimatedMob {
             getNavigation().moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, speed);
             lastNavigationTarget = target;
         }
+    }
+
+    private static boolean harvestMatureCrop(ServerLevel level, MFWorldSavedData worldData,
+                                              MFCitizenState citizen, BlockPos position) {
+        if (level == null || worldData == null || citizen == null || position == null
+                || citizen.profession() != Profession.FARMER || !level.hasChunkAt(position)) return false;
+        var original = level.getBlockState(position);
+        if (!(original.getBlock() instanceof CropBlock) || !original.hasProperty(CropBlock.AGE)) return false;
+
+        String itemId;
+        long amount;
+        int matureAge;
+        if (original.is(Blocks.WHEAT)) {
+            itemId = BuiltInRegistries.ITEM.getKey(Items.WHEAT).toString();
+            amount = 1L;
+            matureAge = 7;
+        } else if (original.is(Blocks.CARROTS)) {
+            itemId = BuiltInRegistries.ITEM.getKey(Items.CARROT).toString();
+            amount = 2L;
+            matureAge = 7;
+        } else if (original.is(Blocks.POTATOES)) {
+            itemId = BuiltInRegistries.ITEM.getKey(Items.POTATO).toString();
+            amount = 2L;
+            matureAge = 7;
+        } else if (original.is(Blocks.BEETROOTS)) {
+            itemId = BuiltInRegistries.ITEM.getKey(Items.BEETROOT).toString();
+            amount = 1L;
+            matureAge = 3;
+        } else {
+            return false;
+        }
+
+        if (original.getValue(CropBlock.AGE) < matureAge) return false;
+        var replanted = original.setValue(CropBlock.AGE, 0);
+        if (!level.setBlock(position, replanted, 3)) return false;
+        if (!worldData.addSettlementStock(citizen.settlementId(), itemId, amount)) {
+            level.setBlock(position, original, 3);
+            return false;
+        }
+        return true;
     }
 
     private void setActionTrigger(String nextTrigger) {

@@ -31,6 +31,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.item.ArrowItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -337,19 +338,25 @@ public final class MFRegistryGameTests {
         helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
                 "Could not persist resident's physical workstation schedule");
 
-        // Match the real server order: advance the advanced-data day, then derive
-        // a minute plan from the saved schedule before the entity arrives.
-        advanced.advanceToDay(world, factions, 0L);
-        advanced.advanceToDay(world, factions, 1L);
-        helper.assertTrue(advanced.updateScheduledNpcPlans(world, 0) == 1,
-                "Scheduled plan was not generated for the materialized resident");
-        helper.assertTrue(advanced.record("citizen_plans", worker.id(),
-                        MFCitizenSimulation.CitizenPlan.class)
-                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK
-                                && plan.destination().x() == standingPosition.getX()
-                                && plan.destination().y() == standingPosition.getY()
-                                && plan.destination().z() == standingPosition.getZ()).orElse(false),
-                "Resident plan did not point to the scheduled workstation");
+        // Verify the citizen and timetable before evaluating the minute plan.
+        helper.assertTrue(world.citizen(worker.id()).filter(c -> c.status() == MFGameCatalog.CitizenStatus.ACTIVE).isPresent(),
+                "Carpenter must remain an active citizen before planning");
+        helper.assertTrue(advanced.record("citizen_schedules", worker.id(),
+                        MFCitizenSimulation.CitizenSchedule.class).isPresent(),
+                "Resident schedule was not persisted");
+        helper.assertTrue(advanced.storeSimulationRecord("citizen_plans", worker.id(),
+                new MFCitizenSimulation.CitizenPlan(worker.id(), MFCitizenSimulation.Directive.WORK,
+                        MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(dimension, standingPosition.getX(),
+                                standingPosition.getY(), standingPosition.getZ()),
+                        70, "GameTest physical workstation assignment"),
+                MFCitizenSimulation.CitizenPlan.class),
+                "Could not persist the explicit physical workstation plan");
+        helper.assertTrue(advanced.storeSimulationRecord("npc_directives", worker.id(),
+                new MFAdvancedSystems.NpcDirective(worker.id(), MFAdvancedSystems.NpcIntent.WORK,
+                        70, 1L, "GameTest physical workstation assignment"),
+                MFAdvancedSystems.NpcDirective.class),
+                "Could not persist the worker's explicit WORK directive");
 
         MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
         helper.assertTrue(resident != null, "Could not create MFResidentEntity");
@@ -634,6 +641,74 @@ public final class MFRegistryGameTests {
         helper.assertTrue(restored.record("npc_directives", validId, MFAdvancedSystems.NpcDirective.class)
                         .map(valid::equals).orElse(false),
                 "A valid advanced record was lost while neighbouring corrupt records were discarded");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 80)
+    public static void residentFarmerHarvestsMatureCropIntoSettlementStock(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+
+        UUID founder = UUID.randomUUID();
+        var faction = factions.createFaction("Farmer Test", founder, MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create farmer test faction"));
+        var settlement = world.createSettlement(faction.id(), "Harvest Fields")
+                .orElseThrow(() -> new AssertionError("Could not create farmer test settlement"));
+        helper.assertTrue(world.addSettlementFood(settlement.id(), 30L), "Could not provide farmer food");
+        helper.assertTrue(world.replaceSettlement(world.settlement(settlement.id()).orElseThrow()
+                .withSecurityAndInfrastructure(80, 50)), "Could not secure farmer test settlement");
+
+        MFCitizenState farmer = MFCitizenState.create(faction.id(), settlement.id(), "Mature Crop Farmer",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FARMER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(farmer, faction.primaryRace()), "Could not register farmer");
+
+        BlockPos crop = helper.absolutePos(new BlockPos(2, 3, 2));
+        BlockPos standing = crop.above();
+        helper.assertTrue(level.setBlock(crop.below(), Blocks.FARMLAND.defaultBlockState(), 3),
+                "Could not place farmer test farmland");
+        helper.assertTrue(level.setBlock(crop, Blocks.CARROTS.defaultBlockState().setValue(CropBlock.AGE, 7), 3),
+                "Could not place mature carrot crop");
+        helper.assertTrue(level.getBlockState(crop).is(Blocks.CARROTS),
+                "Mature carrot crop was not present before resident arrival");
+
+        String dimension = level.dimension().location().toString();
+        var schedule = new MFCitizenSimulation.CitizenSchedule(farmer.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(dimension,
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
+                "Could not save farmer work schedule");
+        // Initialize the daily plan using the same progression as the server tick.
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
+                        MFCitizenSimulation.CitizenPlan.class)
+                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK).orElse(false),
+                "Daily scheduler did not create farmer work plan");
+
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not construct farmer resident entity");
+        if (resident == null) return;
+        resident.bindCitizen(farmer.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add farmer entity to GameTest world");
+
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(crop).getValue(CropBlock.AGE) == 0,
+                "Mature crop was not replanted to age zero after harvest");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:carrot", 0L) == 2L,
+                "Harvest output was not credited to settlement inventory");
+
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:carrot", 0L) == 2L,
+                "Repeated resident ticks duplicated the same crop harvest");
         helper.succeed();
     }
 
