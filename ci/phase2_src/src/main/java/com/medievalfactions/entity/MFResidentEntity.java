@@ -7,6 +7,7 @@ import com.medievalfactions.domain.MFGameCatalog.Profession;
 import com.medievalfactions.data.MFWorldSavedData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.Items;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
@@ -14,10 +15,9 @@ import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
-import net.minecraft.world.level.Level;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.animation.RawAnimation;
 
@@ -87,9 +87,6 @@ public final class MFResidentEntity extends MFAnimatedMob {
             // position one block above it.
             boolean workActionCompleted = false;
             if (plan.activity() == MFCitizenSimulation.Activity.WORK) {
-                // Farmers harvest only mature vanilla crops at their scheduled field waypoint.
-                // The block is replanted before stock is credited; a failed stock update
-                // restores the crop so a full settlement store never destroys the harvest.
                 if (citizen.profession() == Profession.FARMER) {
                     workActionCompleted = harvestMatureCrop(serverLevel, worldData, citizen, target)
                             || harvestMatureCrop(serverLevel, worldData, citizen, target.below());
@@ -107,8 +104,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
                     workActionCompleted = started.isPresent();
                 }
             }
-            // Do not play a profession-work animation unless the crop was harvested
-            // or a compatible, stocked workstation accepted the order.
+            // Work animations run only after a real crop harvest or accepted station job.
             setActionTrigger(plan.activity() == MFCitizenSimulation.Activity.WORK && !workActionCompleted
                     ? null : actionFor(plan.activity(), citizen.profession()));
             data.reportResidentWaypointArrival(serverLevel, citizenId);
