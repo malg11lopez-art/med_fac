@@ -238,10 +238,9 @@ public final class MFResidentEntity extends MFAnimatedMob {
             return false;
         }
         if (!crop.canSurvive(level, position)) return false;
-        var original = level.getBlockState(position);
-        if (!level.setBlock(position, crop, 3)) return false;
-        if (!worldData.consumeResidentSeed(citizen.settlementId(), citizen.id(), seedItem)) {
-            level.setBlock(position, original, 3);
+        if (!worldData.consumeResidentSeed(citizen.settlementId(), citizen.id(), seedItem)) return false;
+        if (!level.setBlock(position, crop, 3)) {
+            worldData.addSettlementStock(citizen.settlementId(), seedItem, 1L);
             return false;
         }
         level.playSound(null, position, net.minecraft.sounds.SoundEvents.HOE_TILL,
