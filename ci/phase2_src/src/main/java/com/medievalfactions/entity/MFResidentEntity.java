@@ -417,6 +417,10 @@ public final class MFResidentEntity extends MFAnimatedMob {
         // biome/depth-weighted tables without changing the transaction contract.
         if (!worldData.creditResidentFish(citizen.settlementId(), citizen.id(),
                 "minecraft:cod", 1L, 10L)) return null;
+        // Fishing rods are reusable settlement tools: equip one for the visible cast but keep
+        // the authoritative tool in stock, unlike consumable catches.
+        setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
+                new net.minecraft.world.item.ItemStack(Items.FISHING_ROD));
         lastProfessionWorkTick = now;
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.SPLASH,
                 water.getX() + 0.5D, water.getY() + 0.65D, water.getZ() + 0.5D,
