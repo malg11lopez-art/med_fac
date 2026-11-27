@@ -41,12 +41,21 @@ public final class MFResidentEntity extends MFAnimatedMob {
     public void bindCitizen(UUID id) {
         if (id == null) throw new IllegalArgumentException("Citizen identity required");
         this.citizenId = id;
+        if (level() instanceof ServerLevel serverLevel) {
+            MFWorldSavedData.get(serverLevel.getServer()).citizen(id)
+                    .ifPresent(citizen -> setVisualRole(visualRoleFor(citizen.profession())));
+        }
         setPersistenceRequired();
     }
     public UUID citizenId() { return citizenId; }
 
     /** Synchronized presentation key; authoritative profession remains in SavedData. */
     public int visualRole() { return getEntityData().get(VISUAL_ROLE); }
+
+    private void setVisualRole(int role) {
+        int safeRole = role >= 0 && role <= 6 ? role : 0;
+        if (getEntityData().get(VISUAL_ROLE) != safeRole) getEntityData().set(VISUAL_ROLE, safeRole);
+    }
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
@@ -96,10 +105,6 @@ public final class MFResidentEntity extends MFAnimatedMob {
         var data = MFAdvancedSavedData.get(serverLevel.getServer());
         MFWorldSavedData worldData = MFWorldSavedData.get(serverLevel.getServer());
         MFCitizenState citizen = worldData.citizen(citizenId).orElse(null);
-        if (citizen != null) {
-            int role = visualRoleFor(citizen.profession());
-            if (getEntityData().get(VISUAL_ROLE) != role) getEntityData().set(VISUAL_ROLE, role);
-        }
         var plan = data.record("citizen_plans", citizenId, MFCitizenSimulation.CitizenPlan.class).orElse(null);
         if (plan == null || citizen == null || citizen.status() != com.medievalfactions.domain.MFGameCatalog.CitizenStatus.ACTIVE) {
             getNavigation().stop(); lastNavigationTarget = null; setActionTrigger(null); return;
@@ -287,6 +292,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
     @Override public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         if (citizenId != null) tag.putUUID("mf_citizen_id", citizenId);
+        tag.putInt("mf_visual_role", visualRole());
         tag.putLong("mf_last_social_tick", lastSocialInteractionTick);
         tag.putLong("mf_last_meal_tick", lastMealTick);
     }
@@ -294,6 +300,13 @@ public final class MFResidentEntity extends MFAnimatedMob {
     @Override public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         citizenId = tag.hasUUID("mf_citizen_id") ? tag.getUUID("mf_citizen_id") : null;
+        int savedRole = tag.contains("mf_visual_role", net.minecraft.nbt.Tag.TAG_INT)
+                ? tag.getInt("mf_visual_role") : 0;
+        setVisualRole(savedRole);
+        if (savedRole == 0 && citizenId != null && level() instanceof ServerLevel serverLevel) {
+            MFWorldSavedData.get(serverLevel.getServer()).citizen(citizenId)
+                    .ifPresent(citizen -> setVisualRole(visualRoleFor(citizen.profession())));
+        }
         lastNavigationTarget = null;
         activeActionTrigger = null;
         lastSocialInteractionTick = tag.contains("mf_last_social_tick", net.minecraft.nbt.Tag.TAG_LONG)
