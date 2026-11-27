@@ -4,7 +4,7 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
 ## Última compilación verificada
 
-**CI #51 — SUCCESS** · commit `98d800e727da23eddb5b1a49b320100b6fbe7a27`.
+**CI #142 — SUCCESS** · commit `2e47da2fd6efa2131de129ed3290beaa931ed90a`.
 
 - JAR: `medieval_factions-0.9.1-alpha.jar`
 - Tamaño: 1.650.075 bytes
@@ -12,6 +12,8 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 - [Ver ejecución #51 y descargar artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45917038330)
 
 ## Funciones integradas en esta alpha
+
+**Cosecha autónoma (fase 8, validada en rama):** agricultores cosechan trigo, zanahorias, patatas y remolacha maduros en el waypoint de trabajo, replantan el cultivo y acreditan la cosecha al almacén del asentamiento. La prueba NeoForge está incluida en los 9 GameTests de CI #142. Pendiente revisión e integración en `main`.
 
 **Cosecha autónoma inicial (fase 8, en validación):** agricultores cosechan trigo, zanahorias, patatas y remolacha maduros en su waypoint de trabajo, replantan el cultivo y acreditan el producto al almacén del asentamiento. Incluye un GameTest NeoForge. La CI #120 fue cancelada durante la compilación, por lo que no se considera integrada ni validada en `main`.
 
@@ -23,7 +25,7 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
 **Interfaz:** panel rápido en la tecla **O** con acceso a ficha, talentos, habilidades, compañeros, facciones, calendario, dashboard y skins. Es un panel de acceso a comandos, no una GUI integral de gestión.
 
-## Validación automatizada #51
+## Validación automatizada #142
 
 - 276 aserciones de dominio superadas.
 - 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG: cero errores y advertencias.
