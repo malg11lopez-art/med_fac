@@ -3,9 +3,9 @@ package com.medievalfactions.gametest;
 import com.medievalfactions.MedievalFactions;
 import com.medievalfactions.data.MFAdvancedSavedData;
 import com.medievalfactions.data.MFFactionSavedData;
-import com.medievalfactions.data.MFFactionSavedData;
 import com.medievalfactions.data.MFWorldSavedData;
 import com.medievalfactions.domain.MFCitizenSimulation;
+import com.medievalfactions.domain.MFWorkstationRules;
 import com.medievalfactions.domain.MFAdvancedSystems;
 import com.medievalfactions.domain.MFCitizenState;
 import com.medievalfactions.domain.MFRaceBiology;
@@ -202,9 +202,9 @@ public final class MFRegistryGameTests {
     }
 
 
-    /** Verifies that autonomous residents only start work when every recipe ingredient is in stock. */
+    /** Residents must reach a compatible physical station before their recipe inputs are reserved. */
     @GameTest(template = "empty", timeoutTicks = 40)
-    public static void autonomousResidentsReserveFundedWorkWithoutDuplicates(GameTestHelper helper) {
+    public static void autonomousResidentsRequirePhysicalWorkstations(GameTestHelper helper) {
         UUID factionId = UUID.randomUUID();
         MFWorldSavedData world = new MFWorldSavedData();
         var settlement = world.createSettlement(factionId, "Worker Test Town")
@@ -223,44 +223,67 @@ public final class MFRegistryGameTests {
 
         MFAdvancedSavedData advanced = new MFAdvancedSavedData();
         MFFactionSavedData factions = new MFFactionSavedData();
-        // First server day establishes the existing world baseline; the next day
-        // exercises the same advanceToDay -> planNpcPopulation path as MFWorldEvents.
-        advanced.advanceToDay(world, factions, 0L);
+        // The real server day creates the work directive, but does not reserve
+        // inputs until the resident reaches a valid physical workstation.
+        advanced.advanceToDay(world, factions, 0L); // first server tick establishes the advanced-data baseline
+        world.advanceOneDay();                     // MFWorldEvents.observeMinecraftDay advances core world data
         advanced.advanceToDay(world, factions, 1L);
-        helper.assertTrue(advanced.record("npc_directives", firstWorker.id(),
-                        MFAdvancedSystems.NpcDirective.class).isPresent(),
-                "Daily simulation did not process the active worker");
         var directive = advanced.record("npc_directives", firstWorker.id(),
                 MFAdvancedSystems.NpcDirective.class).orElse(null);
-        helper.assertTrue(directive != null && directive.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK,
-                "Funded carpenter did not receive a continue-work directive");
-        var firstOrders = world.workOrders(settlement.id());
-        helper.assertTrue(firstOrders.size() == 1 && firstOrders.get(0).recipeId().equals("cut_planks")
-                        && firstOrders.get(0).status() == MFWorkOrderState.Status.RUNNING,
-                "Autonomous carpenter did not start the matching recipe");
+        helper.assertTrue(directive != null && directive.intent() == MFAdvancedSystems.NpcIntent.WORK,
+                "Daily simulation did not schedule the carpenter to work");
+        helper.assertTrue(world.workOrders(settlement.id()).isEmpty(),
+                "Daily planning started an order before the resident reached a workstation");
+
+        helper.assertTrue(!MFWorkstationRules.supports("cut_planks", "minecraft:stone"),
+                "A stone block was incorrectly accepted as a carpentry station");
+        helper.assertTrue(MFWorkstationRules.supports("cut_planks", "minecraft:crafting_table"),
+                "Crafting table was not accepted for cut_planks");
+        helper.assertTrue(MFWorkstationRules.supports("smelt_iron", "minecraft:blast_furnace"),
+                "Blast furnace was not accepted for smelt_iron");
+        helper.assertTrue(MFWorkstationRules.supports("forge_iron_sword", "medieval_factions:blacksmith_anvil"),
+                "Registered blacksmith anvil was not accepted for forging");
+        helper.assertTrue(!MFWorkstationRules.supports("recipe_not_registered", "minecraft:crafting_table"),
+                "Unknown recipes must not accept arbitrary stations");
+        helper.assertTrue(advanced.startResidentWorkOrder(world, firstWorker.id(), "minecraft:stone", 1L).isEmpty(),
+                "Resident started work at an incompatible block");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:oak_log", 0L) == 1L,
+                "Rejected workstation consumed the resident's material");
+
+        var started = advanced.startResidentWorkOrder(world, firstWorker.id(), "minecraft:crafting_table", 1L)
+                .orElseThrow(() -> new AssertionError("Carpenter could not start at a compatible workstation"));
+        helper.assertTrue(started.recipeId().equals("cut_planks")
+                        && started.status() == MFWorkOrderState.Status.RUNNING,
+                "Carpenter started an unexpected production order");
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:oak_log", 0L) == 0L,
-                "Autonomous recipe did not reserve its ingredient");
+                "Starting at the physical station did not reserve the oak log");
 
-        // Replanning an already-employed worker must not create a second active order.
-        advanced.advanceToDay(world, factions, 2L);
-        helper.assertTrue(world.workOrders(settlement.id()).stream()
-                        .filter(order -> order.workerId().equals(firstWorker.id()) && order.active()).count() == 1L,
-                "Repeated NPC planning duplicated the active production order");
+        // Repeated station-arrival ticks return the same active work order instead of duplicating it.
+        var repeated = advanced.startResidentWorkOrder(world, firstWorker.id(), "minecraft:crafting_table", 1L)
+                .orElseThrow(() -> new AssertionError("Existing station work order was not recognized"));
+        helper.assertTrue(repeated.id().equals(started.id())
+                        && world.workOrders(settlement.id()).stream()
+                            .filter(order -> order.workerId().equals(firstWorker.id()) && order.active()).count() == 1L,
+                "Repeated workstation arrival duplicated the active order");
 
-        // A second carpenter cannot start a recipe after the only log has been reserved.
         MFCitizenState secondWorker = MFCitizenState.create(factionId, settlement.id(), "Unfunded Carpenter",
                 MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.CARPENTER, 0L, 20,
                 MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
         helper.assertTrue(world.addCitizen(secondWorker, MFGameCatalog.RaceFamily.HUMANS),
                 "Could not register second carpenter");
-        advanced.advanceToDay(world, factions, 3L);
+        world.advanceOneDay();                     // advances the running production order exactly once
+        advanced.advanceToDay(world, factions, 2L);
+        helper.assertTrue(advanced.startResidentWorkOrder(world, secondWorker.id(), "minecraft:crafting_table", 2L).isEmpty(),
+                "Carpenter without ingredients started a funded order");
         helper.assertTrue(world.workOrders(settlement.id()).stream()
-                        .filter(order -> order.workerId().equals(secondWorker.id()) && order.active()).findAny().isEmpty(),
-                "Unfunded carpenter started work without the required materials");
+                        .anyMatch(order -> order.id().equals(started.id())
+                                && order.status() == MFWorkOrderState.Status.COMPLETED),
+                "Station-funded production did not complete on the next simulation day");
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
-                        .getOrDefault("minecraft:oak_planks", 0L) == 0L,
-                "Autonomous planning fabricated recipe output before completion");
+                        .getOrDefault("minecraft:oak_planks", 0L) == 4L,
+                "Completed physical-station job did not create exactly four planks");
         helper.succeed();
     }
 

@@ -10,6 +10,7 @@ import com.medievalfactions.domain.MFWorkOrderState;
 import com.medievalfactions.domain.MFPopulationIndex;
 import com.medievalfactions.domain.MFRaceBiology;
 import com.medievalfactions.domain.MFRecipeCatalog;
+import com.medievalfactions.domain.MFWorkstationRules;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -522,22 +523,53 @@ public final class MFAdvancedSavedData extends SavedData {
                     : settlement.security() <= 50 ? 30 : 0;
             NpcDirective directive = MFAdvancedSystems.planNpc(citizen, threat,
                     enoughFoodForSettlement, housingAvailable, activeWork, Math.max(0L, day));
-            // Autonomous workers start a suitable recipe when survival needs are stable and inputs exist.
-            if (directive.intent() == NpcIntent.WORK && !activeWork) {
-                var candidate = MFRecipeCatalog.all().stream()
-                        .filter(recipe -> recipe.profession() == citizen.profession())
-                        .filter(recipe -> recipe.inputs().entrySet().stream()
-                                .allMatch(input -> settlement.inventory().getOrDefault(input.getKey(), 0L) >= input.getValue()))
-                        .findFirst();
-                if (candidate.isPresent() && world.startWorkOrder(settlement.id(), citizen.id(), candidate.get().id()).isPresent()) {
-                    directive = new NpcDirective(citizen.id(), NpcIntent.CONTINUE_WORK, 70, Math.max(0L, day),
-                            "La IA inició automáticamente " + candidate.get().id());
-                }
-            }
             put("npc_directives", citizen.id(), directive);
             planned++;
         }
         return planned;
+    }
+
+
+    /**
+     * Starts or resumes a resident's starter recipe only after the resident reaches a
+     * compatible physical workstation. The world inventory remains authoritative and
+     * MFWorldSavedData reserves all inputs atomically.
+     */
+    public synchronized Optional<MFWorkOrderState> startResidentWorkOrder(
+            MFWorldSavedData world, UUID citizenId, String workstationBlockId, long day) {
+        if (world == null || citizenId == null || day < 0L || workstationBlockId == null) return Optional.empty();
+        MFCitizenState citizen = world.citizen(citizenId).orElse(null);
+        if (citizen == null || citizen.status() != CitizenStatus.ACTIVE
+                || citizen.ageStage() == AgeStage.BABY || citizen.ageStage() == AgeStage.CHILD) return Optional.empty();
+
+        NpcDirective directive = record("npc_directives", citizenId, NpcDirective.class).orElse(null);
+        if (directive == null || (directive.intent() != NpcIntent.WORK
+                && directive.intent() != NpcIntent.CONTINUE_WORK)) return Optional.empty();
+
+        for (MFWorkOrderState existing : world.workOrders(citizen.settlementId())) {
+            if (existing.workerId().equals(citizenId) && existing.active()) {
+                return MFWorkstationRules.supports(existing.recipeId(), workstationBlockId)
+                        ? Optional.of(existing) : Optional.empty();
+            }
+        }
+
+        MFSettlementState settlement = world.settlement(citizen.settlementId()).orElse(null);
+        if (settlement == null) return Optional.empty();
+        var candidate = MFRecipeCatalog.all().stream()
+                .filter(recipe -> recipe.profession() == citizen.profession())
+                .filter(recipe -> MFWorkstationRules.supports(recipe.id(), workstationBlockId))
+                .filter(recipe -> recipe.inputs().entrySet().stream()
+                        .allMatch(input -> settlement.inventory().getOrDefault(input.getKey(), 0L) >= input.getValue()))
+                .sorted(java.util.Comparator.comparing(MFRecipeCatalog.Recipe::id))
+                .findFirst();
+        if (candidate.isEmpty()) return Optional.empty();
+
+        Optional<MFWorkOrderState> started = world.startWorkOrder(
+                settlement.id(), citizenId, candidate.get().id());
+        started.ifPresent(order -> put("npc_directives", citizenId,
+                new NpcDirective(citizenId, NpcIntent.CONTINUE_WORK, 70, day,
+                        "Trabaja en estación física: " + workstationBlockId)));
+        return started;
     }
 
     // ------------------------------------------------------------------

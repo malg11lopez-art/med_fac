@@ -48,10 +48,11 @@ Este plan prioriza dependencias reales y entregas comprobables. Una mecánica so
 
 1. Conectar el A* 3D al mundo (colisión, suelo, puertas, escalera, agua, peligros y chunks) o retirar ese A* si se decide usar navegación vanilla; no mantener dos caminos contradictorios.
 2. [x] Asignación autónoma inicial de recetas por profesión desde el ciclo diario, con comprobación de stock y reserva atómica de ingredientes (GameTest real CI #90).
-3. Vincular el trabajo a estaciones físicas y añadir tareas de campo visibles: recolectar, transportar, construir, reparar, cocinar, comerciar, patrullar y descansar; evitar que la producción sea solo una orden económica abstracta.
-4. Añadir necesidades persistentes, personalidad, memoria social, amistad/hostilidad, parejas y encuentros con cooldown.
-5. Añadir LOD regional para NPC no cargados, catch-up acotado y presupuesto de ticks configurable.
-6. Validar navegación en diferentes biomas, desniveles, interiores, puertas y chunks descargados.
+3. [x] Exigir estación física compatible en el waypoint del residente antes de reservar ingredientes e iniciar una de las recetas iniciales (GameTest real CI de fase 5).
+4. Añadir tareas de campo visibles: recolectar, transportar, construir, reparar, cocinar, comerciar, patrullar y descansar; enlazar recetas con contenedores/talleres físicos y evitar que el resto de la producción sea solo simulación abstracta.
+5. Añadir necesidades persistentes, personalidad, memoria social, amistad/hostilidad, parejas y encuentros con cooldown.
+6. Añadir LOD regional para NPC no cargados, catch-up acotado y presupuesto de ticks configurable.
+7. Validar navegación en diferentes biomas, desniveles, interiores, puertas y chunks descargados.
 
 ## P3 — GUI completa
 

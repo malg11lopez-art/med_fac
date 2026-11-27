@@ -25,7 +25,7 @@ Estos cambios estabilizan y amplían la base; no completan la simulación social
 
 ## Sistemas heredados de v0.8
 
-- **Habitantes:** horarios diarios, directivas de supervivencia, destinos y enlaces persistentes entre ciudadano y `MFResidentEntity`; el NPC usa `PathNavigation` terrestre vanilla. El ciclo diario invoca `planNpcPopulation`: asigna recetas iniciales por profesión cuando todos los ingredientes están en almacén y reserva el inventario de forma atómica. A* 3D sigue como motor puro, aún no conectado al navegador del mundo; falta conectar el trabajo a estaciones físicas y tareas de campo.
+- **Habitantes:** horarios diarios, directivas de supervivencia y navegación terrestre vanilla. El residente inicia recetas iniciales solo al alcanzar un bloque físico compatible (mesa de crafteo, forja/yunque u horno según receta); la orden reserva materiales y avanza en el ciclo diario. A* 3D sigue como motor puro sin conexión a `PathNavigation`; siguen pendientes recolección/transporte autónomo, uso interactivo de estaciones/contenedores, tareas de campo e IA social.
 - **Ciudad:** parcelas, distritos, validación de límites/solapamiento, reserva de materiales y enlace al proceso físico de construcción. Los blueprints reales siguen limitados a `small_house` y `watchtower`.
 - **Guerra táctica:** unidades abstractas, órdenes MOVE/ATTACK/BLOCK/DODGE/RALLY/RETREAT, formaciones, turnos, columnas logísticas y ocupación persistente. No crea soldados visibles todavía.
 - **Caravanas:** convoyes físicos simulados por waypoints, mercancía y escrow reservados, emboscadas, carga perdida, reanudación y liquidación bilateral. No hay carro ni escolta como entidades.
