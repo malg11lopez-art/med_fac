@@ -822,6 +822,71 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", batch = "zzzResidentRancherWork", timeoutTicks = 80)
+    public static void rancherMilksNearbyCowUsingSettlementBucket(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Rancher Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create rancher test faction"));
+        var settlement = world.createSettlement(faction.id(), "Dairy Farm")
+                .orElseThrow(() -> new AssertionError("Could not create rancher test settlement"));
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:bucket", 1L),
+                "Could not stock one empty bucket for the rancher");
+        MFCitizenState rancher = MFCitizenState.create(faction.id(), settlement.id(), "Test Rancher",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.RANCHER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(rancher, faction.primaryRace()), "Could not register rancher");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        var cow = EntityType.COW.create(level);
+        helper.assertTrue(cow != null, "Could not create test cow");
+        if (cow == null) return;
+        cow.setPos(standing.getX() + 1.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(cow), "Could not add test cow");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(rancher.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save rancher schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not create rancher resident");
+        if (resident == null) return;
+        resident.bindCitizen(rancher.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add rancher resident");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:bucket", 0L) == 0L
+                        && world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:milk_bucket", 0L) == 1L,
+                "Rancher did not exchange the stocked empty bucket for one milk bucket");
+        helper.assertTrue(world.citizen(rancher.id()).map(c -> c.professionXp() == 10L).orElse(false),
+                "Successful milking did not award exactly ten profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:milk_bucket", 0L) == 1L,
+                "Repeated resident ticks duplicated the same milk collection");
+
+        MFCitizenState nonRancher = MFCitizenState.create(faction.id(), settlement.id(), "Test Farmer",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FARMER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(nonRancher, faction.primaryRace()),
+                "Could not register non-rancher transaction guard");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:bucket", 1L),
+                "Could not stock guard-test bucket");
+        helper.assertTrue(!world.creditResidentMilk(settlement.id(), nonRancher.id(), 1L, 10L),
+                "A non-rancher was allowed to create milk through the rancher transaction");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:bucket", 0L) == 1L,
+                "Rejected milking transaction consumed the empty bucket");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "zResidentProfessionActions", timeoutTicks = 80)
     public static void fisherCatchesFishAtRealWaterWorksite(GameTestHelper helper) {
         var level = helper.getLevel();
@@ -962,7 +1027,7 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", timeoutTicks = 80)
+    @GameTest(template = "empty", batch = "residentHarvesting", timeoutTicks = 80)
     public static void residentFarmerHarvestsMatureCropIntoSettlementStock(GameTestHelper helper) {
         var level = helper.getLevel();
         var server = level.getServer();
@@ -1019,8 +1084,10 @@ public final class MFRegistryGameTests {
         for (int i = 0; i < 10; i++) resident.tick();
         helper.assertTrue(resident.visualRole() == 1,
                 "Farmer profession was not synchronized to the resident renderer");
-        helper.assertTrue(level.getBlockState(crop).getValue(CropBlock.AGE) == 0,
-                "Mature crop was not replanted to age zero after harvest");
+        helper.assertTrue(level.getBlockState(crop).is(Blocks.CARROTS)
+                        && level.getBlockState(crop).getValue(CropBlock.AGE) == 0,
+                "Mature crop was not replanted to age zero after harvest; actual block: "
+                        + level.getBlockState(crop));
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:carrot", 0L) == 2L,
                 "Harvest output was not credited to settlement inventory");
