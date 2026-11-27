@@ -253,7 +253,7 @@ public final class MFWorldSavedData extends SavedData {
 
     /**
      * Atomically consumes one seed from a farmer's own settlement store.
-     * The world block is placed by the caller first and rolled back if this transaction fails.
+     * The caller debits before placement and refunds the seed if the world edit fails.
      */
     public synchronized boolean consumeResidentSeed(UUID settlementId, UUID citizenId, String seedItemId) {
         MFSettlementState settlement = settlements.get(settlementId);
