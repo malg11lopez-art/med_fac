@@ -3,6 +3,7 @@ package com.medievalfactions.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -19,6 +20,7 @@ public final class MFMainScreen extends Screen {
     private static final int PANEL_HEIGHT = 390;
     private int panelLeft;
     private int panelTop;
+    private EditBox actionInput;
 
     public MFMainScreen() {
         super(Component.literal("MEDIEVAL FACTIONS — Gestión del mundo"));
@@ -46,6 +48,15 @@ public final class MFMainScreen extends Screen {
                     .bounds(x, y, tabWidth, tabHeight).build());
         }
 
+        int actionY = panelTop + panelHeight - 57;
+        actionInput = new EditBox(font, panelLeft + 12, actionY, Math.max(180, panelWidth - 116), 20,
+                Component.literal("Acción del servidor"));
+        actionInput.setMaxLength(160);
+        actionInput.setHint(Component.literal("mf advanced ..."));
+        addRenderableWidget(actionInput);
+        addRenderableWidget(Button.builder(Component.literal("Ejecutar"), button -> executeManagementCommand())
+                .bounds(panelLeft + panelWidth - 94, actionY, 82, 20).build());
+
         int footerY = panelTop + panelHeight - 29;
         addRenderableWidget(Button.builder(Component.literal("Actualizar"),
                 button -> requestPage(MFManagementClientState.page()))
@@ -67,6 +78,27 @@ public final class MFMainScreen extends Screen {
 
     private void requestPage(int page) {
         MFManagementClientState.request(page);
+    }
+
+    private void executeManagementCommand() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (actionInput == null || minecraft.player == null || minecraft.getConnection() == null) return;
+        String command = actionInput.getValue().trim();
+        if (command.startsWith("/")) command = command.substring(1).trim();
+        if (command.isEmpty() || command.length() > 160 || command.contains(";")
+                || command.contains("\n") || command.contains("\r")) {
+            minecraft.player.displayClientMessage(Component.literal("Acción rechazada: introduce un solo comando breve."), true);
+            return;
+        }
+        String[] parts = command.split("\\s+", 3);
+        if (parts.length < 2 || !parts[0].equals("mf")
+                || !java.util.Set.of("advanced", "character", "faction", "calendar").contains(parts[1])) {
+            minecraft.player.displayClientMessage(Component.literal("Solo se permiten operaciones de MEDIEVAL FACTIONS (/mf)."), true);
+            return;
+        }
+        minecraft.getConnection().sendCommand(command);
+        actionInput.setValue("");
+        requestPage(MFManagementClientState.page());
     }
 
     private void sendCommand(String command) {
