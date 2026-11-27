@@ -2,47 +2,45 @@
 
 Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
-## Última compilación verificada
+## Última validación automatizada
 
-**CI #142 — SUCCESS** · commit `2e47da2fd6efa2131de129ed3290beaa931ed90a`.
+**CI run 46024843978 — SUCCESS** · commit `a4edb23a6986e49e56dbfe33ec847d6a2e841f69`.
 
-- JAR: `medieval_factions-0.9.1-alpha.jar`
-- Tamaño: 1.650.075 bytes
-- SHA-256: `5acfc06c96c13aea83b761b9dc04b47a87f679e2fca66385e24a13a6ebd7b88e`
-- [Ver ejecución #51 y descargar artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45917038330)
+- 12 GameTests NeoForge superados.
+- Validación de recursos, compilación, descriptor/JAR, servidor dedicado y cliente headless superados.
+- Conexión cliente-servidor y round-trip de paquetes de skin superados.
+- [Ver ejecución CI y artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/46024843978).
 
-## Funciones integradas en esta alpha
+Esta validación corresponde a la rama de trabajo encadenada de las PR #9–#15; **todavía no está integrada en `main`**.
 
-**Cosecha autónoma (fase 8, validada en rama):** agricultores cosechan trigo, zanahorias, patatas y remolacha maduros en el waypoint de trabajo, replantan el cultivo y acreditan la cosecha al almacén del asentamiento. La prueba NeoForge está incluida en los 9 GameTests de CI #142. Pendiente revisión e integración en `main`.
+## Funciones añadidas y validadas en esta rama
 
-**Cosecha autónoma inicial (fase 8, en validación):** agricultores cosechan trigo, zanahorias, patatas y remolacha maduros en su waypoint de trabajo, replantan el cultivo y acreditan el producto al almacén del asentamiento. Incluye un GameTest NeoForge. La CI #120 fue cancelada durante la compilación, por lo que no se considera integrada ni validada en `main`.
+**Cosecha autónoma:** los agricultores cosechan trigo, zanahorias, patatas y remolachas maduras en su waypoint de trabajo, replantan el cultivo y acreditan la producción al almacén del asentamiento. Cada cosecha correcta otorga 12 XP de profesión; reproduce el sonido vanilla de romper cultivo y emite partículas. El inventario y la experiencia se guardan en una transacción sincronizada.
 
-**Sincronización de skins:** 86 skins, selección persistente por jugador y sincronización servidor-cliente con actualización al entrar, respawnear y desconectarse. Compilada y validada estáticamente; falta una sesión real de dos clientes y todavía no se aplica a NPC.
+**Habitantes civiles:** se añade una textura pixel-art civil de 128×128 y un modelo específico para residentes. Los guardias conservan su textura acorazada. Se reutilizan el rig y las animaciones existentes; todavía no hay variantes visuales por profesión.
 
-**Audio:** 75 SoundEvents y 75 OGG validados, con referencias detectadas en keyframes o código de gameplay. Se han añadido disparadores para pasos, espada, parry, armadura, puertas, crafting, fundición, ambientes, progreso, caballo y habilidades. El cliente headless no acredita mezcla ni escucha humana.
+**Gestión y familia:** el panel O presenta páginas de estado y comandos sugeridos. El dashboard global exige nivel de operador 2 y limita las peticiones a una cada cinco ticks. `/mf advanced family status` muestra únicamente los datos familiares y médicos del jugador que lo ejecuta.
 
-**Mecánicas:** `elemental_burst`, `shadow_blink`, selección de objetivos mediante ray tracing de entidades que respeta obstáculos y búsqueda indexada de ciudadanos por UUID para reducir trabajo repetido por residente.
+**Vida cotidiana:** los residentes pueden socializar con otro habitante activo del mismo asentamiento, aumentando la satisfacción de ambos con cooldown persistente de 600 ticks, sonido y partículas. También pueden consumir una ración real del almacén durante la actividad EAT: hambre −35, salud +1 y satisfacción +2. El cooldown de comida también se persiste.
 
-**Interfaz:** panel rápido en la tecla **O** con acceso a ficha, talentos, habilidades, compañeros, facciones, calendario, dashboard y skins. Es un panel de acceso a comandos, no una GUI integral de gestión.
+## Validación CI más reciente
 
-## Validación automatizada #142
+- 12/12 GameTests NeoForge.
+- 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG validados.
+- 86 skins y comprobaciones estáticas de sincronización.
+- Compilación NeoForge y JAR íntegro.
+- Servidor dedicado y cliente headless con recarga de recursos.
+- Conexión real cliente-servidor y round-trip de skin.
 
-- 276 aserciones de dominio superadas.
-- 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG: cero errores y advertencias.
-- 86/86 skins y 14 comprobaciones de sincronización.
-- `gradle clean test build` y NeoForge GameTests: PASS.
-- Servidor dedicado y cliente headless: arranque y recarga de recursos correctos.
-- JAR `0.9.1-alpha`: descriptor e integridad verificados.
-- Documentación de estado, matriz y plan actualizada dentro del ZIP de fuentes.
+## Lo que todavía falta
 
-## Pendiente antes de una versión completa
-
-- GUI gráfica de gestión para personaje, inventario, facción, ciudad, economía, diplomacia y guerra.
-- Pruebas manuales visuales/auditivas de animaciones, objetos, sonidos y skins; sesión multijugador con dos clientes.
-- Persistencia completa NBT, migraciones, mundo limpio/existente, reinicios, chunks y dimensiones.
-- IA social/laboral autónoma, navegación integral de habitantes y tareas físicas.
+- GUI integral con menús e inventarios cliente-servidor; el panel O es una consola gráfica de consulta/atajos.
+- Variantes de textura por profesión y revisión visual manual de cada entidad/animación.
+- Pruebas auditivas humanas de mezcla, volumen, espacialización y sincronía.
+- IA social completa: memoria, amistades persistentes, conflictos, relaciones autónomas, personalidad y rutinas más ricas.
+- Tareas físicas autónomas adicionales: transportar, construir, reparar, cocinar, comerciar y patrullar.
 - Constructor integral de ciudades, soldados y asedios visibles, carros físicos y mercados autónomos.
-- Vuelo autónomo y ciclo de vida completo de dragones, vida familiar/medicina y jefes físicos.
+- Vuelo autónomo y ciclo de vida completo de dragones; familias/medicina NPC completas; jefes físicos.
 - Profiling con poblaciones altas, rutas, convoyes y batallas simultáneas.
 
-**Estado:** build funcionalmente arrancable con integraciones reales, pero sigue siendo una **alpha**, no un juego terminado. El informe detallado está en `QA_STATUS_v0_9_1.md`; el paquete fuente conserva la documentación técnica en español.
+**Estado:** alpha con mecánicas nuevas conectadas al mundo y pruebas automatizadas satisfactorias. No es el mod terminado ni se ha fusionado todavía en `main`. Consulta `QA_STATUS_v0_9_1.md`, `SYSTEM_COMPLETION_MATRIX.md` y `NEXT_IMPLEMENTATION_PLAN.md` para el estado detallado.

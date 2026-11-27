@@ -2,6 +2,15 @@
 
 Este plan prioriza dependencias reales y entregas comprobables. Una mecánica solo podrá declararse completa cuando tenga reglas, estado persistente, integración de mundo, UI/controles adecuados, pruebas automatizadas y validación dentro de Minecraft cliente/servidor.
 
+## Estado de v0.9.1-alpha — CI run 46024843978 PASS
+
+- [x] Cosecha física de agricultores, replantación, stock y XP.
+- [x] Textura civil para residentes y modelo separado del guardia.
+- [x] Dashboard global protegido, consultas contextuales y estado familiar personal.
+- [x] Socialización y alimentación de residentes con efectos persistentes sobre necesidades.
+- [x] 12 GameTests NeoForge, recursos, build, servidor, cliente y conexión cliente-servidor.
+- [ ] GUI integral, IA social completa, transporte autónomo, ciudades completas, ejércitos/caravanas físicas y autonomía aérea de dragones.
+
 ## Estado de v0.9
 
 ## Correcciones entregadas en v0.9
@@ -46,7 +55,10 @@ Este plan prioriza dependencias reales y entregas comprobables. Una mecánica so
 
 ## P2 — IA integral de ciudadanos
 
-- [ ] Fase 8 en validación: cosecha física inicial por agricultores de cultivos vanilla maduros, replantación y abono al inventario del asentamiento. GameTest añadido; CI #120 fue cancelada antes de terminar compilación y requiere reejecución completa.
+- [x] Fase 8: cosecha física inicial de trigo, zanahoria, patata y remolacha; replantación, abono al almacén y 12 XP de profesión por cosecha. Transacción persistente y GameTests NeoForge validados en CI run 46024843978.
+- [x] Feedback de cosecha: sonido vanilla de cultivo y partículas sincronizadas tras confirmar el crédito.
+- [x] Fase 10 inicial: SOCIALIZE mejora la satisfacción de dos residentes del mismo asentamiento con cooldown persistente, y EAT consume una ración real para reducir hambre/restaurar salud. 12 GameTests pasan.
+- [ ] Completar tareas autónomas de transporte, construcción, reparación, cocina, comercio y patrulla; memoria social y relaciones persistentes.
 
 1. Conectar el A* 3D al mundo (colisión, suelo, puertas, escalera, agua, peligros y chunks) o retirar ese A* si se decide usar navegación vanilla; no mantener dos caminos contradictorios.
 2. [x] Asignación autónoma inicial de recetas por profesión desde el ciclo diario, con comprobación de stock y reserva atómica de ingredientes (GameTest real CI #90).
@@ -57,6 +69,11 @@ Este plan prioriza dependencias reales y entregas comprobables. Una mecánica so
 7. Validar navegación en diferentes biomas, desniveles, interiores, puertas y chunks descargados.
 
 ## P3 — GUI completa
+
+- [x] Panel O de consulta con páginas, comandos sugeridos y acción de planificación protegida.
+- [x] Dashboard global restringido a operador nivel 2 y cooldown de peticiones.
+- [x] Consulta familiar personal `/mf advanced family status`.
+- [ ] La GUI sigue sin menús de contenedor ni gestión integral; continuar con inventarios, formularios y vistas de dominio.
 
 1. Arquitectura de servidor con `AbstractContainerMenu` y cliente con `Screen`.
 2. Pantalla de personaje/estadísticas, inventario de facción y almacenes.
@@ -99,6 +116,11 @@ Este plan prioriza dependencias reales y entregas comprobables. Una mecánica so
 5. Pruebas de reproducción, herencia, eclosión, chunk reload y dueño desconectado.
 
 ## P8 — Familias, medicina y vida cotidiana
+
+- [x] Socialización física inicial entre residentes activos del mismo asentamiento, con satisfacción bilateral, sonido, partículas y cooldown persistente.
+- [x] Comidas que consumen raciones del asentamiento y modifican hambre/salud/satisfacción.
+- [x] Consulta de familia y salud del propio jugador desde comando y GUI.
+- [ ] Ampliar a memoria social, amistades/hostilidad, consentimiento autónomo y personalidad.
 
 1. Interacción social visible y relación entre ciudadanos basada en tiempo, consentimiento y personalidad.
 2. Matrimonio/ceremonia, embarazo visual, parto, parentesco, herencia, custodia, educación y sucesión.
