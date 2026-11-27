@@ -29,6 +29,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
     private BlockPos lastNavigationTarget;
     private String activeActionTrigger;
     private long lastSocialInteractionTick = -1L;
+    private long lastMealTick = -1L;
 
     public MFResidentEntity(EntityType<? extends MFResidentEntity> type, Level level) { super(type, level); }
 
@@ -127,9 +128,26 @@ public final class MFResidentEntity extends MFAnimatedMob {
                     workActionCompleted = started.isPresent();
                 }
             }
-            // Work animations run only after a real crop harvest or accepted station job.
-            setActionTrigger(plan.activity() == MFCitizenSimulation.Activity.WORK && !workActionCompleted
-                    ? null : actionFor(plan.activity(), citizen.profession()));
+            boolean eatActionCompleted = false;
+            if (plan.activity() == MFCitizenSimulation.Activity.EAT) {
+                long now = serverLevel.getGameTime();
+                boolean mealCooldownElapsed = lastMealTick < 0L || now < lastMealTick || now - lastMealTick >= 600L;
+                if (mealCooldownElapsed && worldData.feedResident(citizen.settlementId(), citizenId)) {
+                    lastMealTick = now;
+                    eatActionCompleted = true;
+                    serverLevel.playSound(null, blockPosition(), net.minecraft.sounds.SoundEvents.GENERIC_EAT,
+                            net.minecraft.sounds.SoundSource.NEUTRAL, 0.48F,
+                            0.94F + getRandom().nextFloat() * 0.12F);
+                    serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                            getX(), getY() + 1.0D, getZ(), 2, 0.18D, 0.16D, 0.18D, 0.01D);
+                } else {
+                    eatActionCompleted = lastMealTick >= 0L && now >= lastMealTick && now - lastMealTick < 40L;
+                }
+            }
+            // Work/eating animations run only after a real crop harvest, accepted station job or consumed meal.
+            boolean actionSucceeded = (plan.activity() != MFCitizenSimulation.Activity.WORK || workActionCompleted)
+                    && (plan.activity() != MFCitizenSimulation.Activity.EAT || eatActionCompleted);
+            setActionTrigger(actionSucceeded ? actionFor(plan.activity(), citizen.profession()) : null);
             data.reportResidentWaypointArrival(serverLevel, citizenId);
             return;
         }
@@ -236,6 +254,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
         super.addAdditionalSaveData(tag);
         if (citizenId != null) tag.putUUID("mf_citizen_id", citizenId);
         tag.putLong("mf_last_social_tick", lastSocialInteractionTick);
+        tag.putLong("mf_last_meal_tick", lastMealTick);
     }
 
     @Override public void readAdditionalSaveData(CompoundTag tag) {
@@ -245,5 +264,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
         activeActionTrigger = null;
         lastSocialInteractionTick = tag.contains("mf_last_social_tick", net.minecraft.nbt.Tag.TAG_LONG)
                 ? tag.getLong("mf_last_social_tick") : -1L;
+        lastMealTick = tag.contains("mf_last_meal_tick", net.minecraft.nbt.Tag.TAG_LONG)
+                ? tag.getLong("mf_last_meal_tick") : -1L;
     }
 }

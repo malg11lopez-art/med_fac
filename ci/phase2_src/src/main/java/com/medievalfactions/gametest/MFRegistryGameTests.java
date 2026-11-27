@@ -661,6 +661,43 @@ public final class MFRegistryGameTests {
     }
 
     @GameTest(template = "empty", timeoutTicks = 40)
+    public static void residentMealConsumesFoodAndImprovesNeedsAtomically(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        var factions = MFFactionSavedData.get(server);
+        var world = MFWorldSavedData.get(server);
+        var faction = factions.createFaction("Meal Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create meal test faction"));
+        var fedSettlement = world.createSettlement(faction.id(), "Well Stocked")
+                .orElseThrow(() -> new AssertionError("Could not create stocked settlement"));
+        var emptySettlement = world.createSettlement(faction.id(), "Empty Pantry")
+                .orElseThrow(() -> new AssertionError("Could not create empty settlement"));
+        helper.assertTrue(world.addSettlementFood(fedSettlement.id(), 3L), "Could not stock meal test settlement");
+
+        MFCitizenState hungry = MFCitizenState.create(faction.id(), fedSettlement.id(), "Hungry Resident",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FARMER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS)).withHealthAndHunger(80, 60);
+        MFCitizenState unfed = MFCitizenState.create(faction.id(), emptySettlement.id(), "Unfed Resident",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.CARPENTER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS)).withHealthAndHunger(80, 60);
+        helper.assertTrue(world.addCitizen(hungry, faction.primaryRace()), "Could not add hungry resident");
+        helper.assertTrue(world.addCitizen(unfed, faction.primaryRace()), "Could not add unfed resident");
+
+        helper.assertTrue(world.feedResident(fedSettlement.id(), hungry.id()),
+                "Resident with hunger and available food should receive a meal");
+        helper.assertTrue(world.settlement(fedSettlement.id()).map(s -> s.foodRations() == 2L).orElse(false),
+                "Meal must consume exactly one stored food ration");
+        helper.assertTrue(world.citizen(hungry.id()).map(c -> c.hunger() == 25
+                        && c.health() == 81 && c.satisfaction() == 67).orElse(false),
+                "Meal must reduce hunger, restore a small amount of health and improve satisfaction");
+        helper.assertTrue(!world.feedResident(emptySettlement.id(), unfed.id()),
+                "A meal must not be fabricated when the settlement has no food");
+        helper.assertTrue(world.citizen(unfed.id()).map(c -> c.hunger() == 60
+                        && c.health() == 80 && c.satisfaction() == 65).orElse(false),
+                "Rejected meal must leave resident needs unchanged");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 40)
     public static void residentSocializationImprovesBothCitizensAtomically(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
         var factions = MFFactionSavedData.get(server);
