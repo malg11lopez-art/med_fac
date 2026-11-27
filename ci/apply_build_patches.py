@@ -334,4 +334,44 @@ connected_sound_ids = keyframe_sound_ids | java_sound_ids
 else:
     print("Sound-trigger audit already excludes operator preview and GameTests.")
 
+
+# Apply the server-authoritative multiplayer skin and gameplay audio integration.
+# The patch is generated from the already validated v0.9.1 CI source snapshot.
+overlay_dir = Path(__file__).resolve().parent / "overlays"
+overlay_parts = sorted(overlay_dir.glob("skin_audio_gameplay_part*.b64")) if overlay_dir.exists() else []
+skin_validator = project / "tools/validate_assets.py"
+if not skin_validator.is_file():
+    raise SystemExit("Missing tools/validate_assets.py for multiplayer skin validation")
+skin_validator_text = skin_validator.read_text(encoding="utf-8")
+skin_marker = "MULTIPLAYER_SKIN_SYNC_VALIDATION_V1"
+skin_ready = (
+    (root / "network/MFPlayerSkinServerNetwork.java").exists()
+    and (root / "MFGameplayAudioEvents.java").exists()
+    and "skinFor(player)" in (root / "client/MFPlayerSkinLayer.java").read_text(encoding="utf-8")
+    and skin_marker in skin_validator_text
+)
+if skin_ready:
+    print("Multiplayer skin/audio gameplay overlay already applied.")
+elif overlay_parts:
+    payload = "".join(part.read_text(encoding="ascii").strip() for part in overlay_parts)
+    try:
+        overlay_bytes = gzip.decompress(base64.b64decode(payload, validate=True))
+    except Exception as exc:
+        raise SystemExit(f"Could not decode multiplayer skin/audio overlay: {exc}")
+    result = subprocess.run(
+        ["patch", "--batch", "--forward", "-p1"],
+        cwd=project,
+        input=overlay_bytes,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(result.stdout.decode("utf-8", errors="replace"))
+    if result.returncode != 0:
+        raise SystemExit(f"Multiplayer skin/audio overlay failed with exit code {result.returncode}")
+    if skin_marker not in skin_validator.read_text(encoding="utf-8"):
+        raise SystemExit("Multiplayer skin/audio overlay did not complete its validation marker.")
+    print(f"Applied multiplayer skin sync and natural audio/gameplay hooks ({len(overlay_parts)} chunks).")
+else:
+    raise SystemExit("Multiplayer skin/audio overlay bundle is missing.")
+
 print("All CI compile and packaging patches applied successfully.")

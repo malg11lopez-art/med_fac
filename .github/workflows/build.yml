@@ -11,6 +11,7 @@ on:
       - 'ci/feature_patch/**'
       - 'ci/overlays/**'
       - 'ci/verify_sound_preview.py'
+      - 'ci/verify_skin_sync.py'
       - 'ci/quality_patch/**'
       - 'ci/patches/**'
       - '.github/workflows/build.yml'
@@ -92,6 +93,8 @@ jobs:
 
       - name: Verify all SoundEvents are auditionable
         run: python ci/verify_sound_preview.py "${{ steps.archive.outputs.project_dir }}"
+      - name: Verify multiplayer player skin synchronization
+        run: python ci/verify_skin_sync.py "${{ steps.archive.outputs.project_dir }}"
 
       - name: Run domain tests
         working-directory: ${{ steps.archive.outputs.project_dir }}
