@@ -7,6 +7,11 @@ import com.medievalfactions.data.MFWorldSavedData;
 import com.medievalfactions.domain.MFCitizenSimulation;
 import com.medievalfactions.domain.MFWorkstationRules;
 import com.medievalfactions.domain.MFAdvancedSystems;
+import com.medievalfactions.domain.MFAdventureSystems;
+import com.medievalfactions.domain.MFCityPlanner;
+import com.medievalfactions.domain.MFDragonLifecycle;
+import com.medievalfactions.domain.MFFamilyCare;
+import com.medievalfactions.domain.MFTacticalWarfare;
 import com.medievalfactions.domain.MFCitizenState;
 import com.medievalfactions.domain.MFRaceBiology;
 import com.medievalfactions.domain.MFWorkOrderState;
@@ -38,6 +43,7 @@ import net.minecraft.world.item.SwordItem;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** Runtime registry and persistent-data checks executed against a real NeoForge GameTestServer. */
@@ -368,6 +374,214 @@ public final class MFRegistryGameTests {
                         .filter(order -> order.workerId().equals(worker.id()) && order.active()).count() == 1L,
                 "Repeated physical station ticks created duplicate production orders");
         helper.succeed();
+    }
+
+    /**
+     * Serializes every registered advanced-record bucket with Minecraft's real NBT
+     * implementation and Gson, then verifies exact record equality after reload.
+     * This guards nested records, enums, UUIDs, collections and domain-specific buckets.
+     */
+    @GameTest(template = "empty", timeoutTicks = 80)
+    public static void everyAdvancedSavedDataBucketRoundTrips(GameTestHelper helper) {
+        MFAdvancedSavedData source = new MFAdvancedSavedData();
+        Map<String, Object> expected = new java.util.LinkedHashMap<>();
+        Map<String, UUID> keys = new java.util.LinkedHashMap<>();
+
+        UUID owner = UUID.randomUUID();
+        UUID factionA = UUID.randomUUID();
+        UUID factionB = UUID.randomUUID();
+        UUID settlementA = UUID.randomUUID();
+        UUID settlementB = UUID.randomUUID();
+        UUID citizenId = UUID.randomUUID();
+        UUID entityId = UUID.randomUUID();
+        UUID personAId = UUID.randomUUID();
+        UUID personBId = UUID.randomUUID();
+        UUID constructionId = UUID.randomUUID();
+        UUID cityPlanId = UUID.randomUUID();
+        UUID dragonId = UUID.randomUUID();
+        UUID encounterId = UUID.randomUUID();
+        UUID expeditionId = UUID.randomUUID();
+
+        saveAdvancedSample(helper, source, expected, keys, "npc_directives", citizenId,
+                new MFAdvancedSystems.NpcDirective(citizenId, MFAdvancedSystems.NpcIntent.WORK, 40, 1L, "Persist test"),
+                MFAdvancedSystems.NpcDirective.class);
+        var caravan = new MFAdvancedSystems.Caravan(UUID.randomUUID(), settlementA, settlementB, "minecraft:iron_ingot",
+                4L, 80L, 2, 15, MFAdvancedSystems.CaravanStatus.IN_TRANSIT, 1L);
+        saveAdvancedSample(helper, source, expected, keys, "caravans", caravan.id(), caravan,
+                MFAdvancedSystems.Caravan.class);
+
+        UUID accountId = UUID.randomUUID();
+        saveAdvancedSample(helper, source, expected, keys, "bank_accounts", accountId,
+                new MFAdvancedSystems.BankAccount(accountId, owner, settlementA, 250L, false),
+                MFAdvancedSystems.BankAccount.class);
+        var loan = new MFAdvancedSystems.Loan(UUID.randomUUID(), accountId, settlementA, 100L, 110L,
+                10L, 30, 3, 0, MFAdvancedSystems.LoanStatus.ACTIVE);
+        saveAdvancedSample(helper, source, expected, keys, "loans", loan.id(), loan,
+                MFAdvancedSystems.Loan.class);
+        var siege = new MFAdvancedSystems.Siege(UUID.randomUUID(), factionA, factionB, settlementB,
+                40, 25, 300L, 250L, 85, 70, 2, MFAdvancedSystems.SiegeStatus.ACTIVE);
+        saveAdvancedSample(helper, source, expected, keys, "sieges", siege.id(), siege,
+                MFAdvancedSystems.Siege.class);
+        var companion = new MFAdvancedSystems.Companion(UUID.randomUUID(), owner, MFAdvancedSystems.CompanionSpecies.HORSE,
+                45, 2, 120L, 30, 30, 25, 30, 10, true);
+        saveAdvancedSample(helper, source, expected, keys, "companions", companion.id(), companion,
+                MFAdvancedSystems.Companion.class);
+
+        long adultAge = MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS) + 100L;
+        var personA = new MFAdvancedSystems.Person(personAId, factionA, MFGameCatalog.RaceFamily.HUMANS,
+                MFGameCatalog.Affinity.SOLAR, MFGameCatalog.Element.FIRE, MFAdvancedSystems.Sex.FEMALE,
+                adultAge, 95, "Ashford");
+        var personB = new MFAdvancedSystems.Person(personBId, factionA, MFGameCatalog.RaceFamily.HUMANS,
+                MFGameCatalog.Affinity.SOLAR, MFGameCatalog.Element.FIRE, MFAdvancedSystems.Sex.MALE,
+                adultAge, 90, "Ashford");
+        saveAdvancedSample(helper, source, expected, keys, "persons", personAId,
+                personA, MFAdvancedSystems.Person.class);
+        var relationship = new MFAdvancedSystems.Relationship(UUID.randomUUID(), personAId, personBId, 75,
+                MFAdvancedSystems.RelationshipStatus.COURTING, true, true, 1L);
+        saveAdvancedSample(helper, source, expected, keys, "relationships", relationship.id(), relationship,
+                MFAdvancedSystems.Relationship.class);
+        var pregnancy = new MFAdvancedSystems.Pregnancy(UUID.randomUUID(), personAId, personBId, 2L, 120,
+                0x4D465F32L, MFAdvancedSystems.PregnancyStatus.ACTIVE);
+        saveAdvancedSample(helper, source, expected, keys, "pregnancies", pregnancy.id(), pregnancy,
+                MFAdvancedSystems.Pregnancy.class);
+        UUID childId = UUID.randomUUID();
+        saveAdvancedSample(helper, source, expected, keys, "lineage", childId,
+                new MFAdvancedSavedData.Lineage(childId, personAId, personBId, "Ashford"),
+                MFAdvancedSavedData.Lineage.class);
+        var expedition = new MFAdvancedSystems.Expedition(UUID.randomUUID(), factionA, settlementA, List.of(citizenId),
+                41L, 2, 3, 24L, 18, MFAdvancedSystems.ExpeditionStatus.TRAVELLING,
+                "minecraft:gold_ingot", 2L);
+        saveAdvancedSample(helper, source, expected, keys, "expeditions", expedition.id(), expedition,
+                MFAdvancedSystems.Expedition.class);
+        saveAdvancedSample(helper, source, expected, keys, "construction", constructionId,
+                new MFAdvancedSystems.ConstructionProject(constructionId, settlementA, owner,
+                        "minecraft:overworld", 10, 64, 10, 0, "small_house", 2,
+                        MFAdvancedSystems.ConstructionStatus.BUILDING, 1L),
+                MFAdvancedSystems.ConstructionProject.class);
+        var dungeon = new MFAdvancedSystems.DungeonProject(UUID.randomUUID(), 77L, 2, "minecraft:overworld",
+                30, 64, 30, 4, MFAdvancedSystems.DungeonBuildStatus.BUILDING);
+        saveAdvancedSample(helper, source, expected, keys, "dungeons", dungeon.id(), dungeon,
+                MFAdvancedSystems.DungeonProject.class);
+
+        var waypoint = new MFCitizenSimulation.Waypoint("minecraft:overworld", 12, 64, -8);
+        saveAdvancedSample(helper, source, expected, keys, "citizen_schedules", citizenId,
+                new MFCitizenSimulation.CitizenSchedule(citizenId, List.of(
+                        new MFCitizenSimulation.ScheduleEntry(480, MFCitizenSimulation.Activity.WORK, waypoint),
+                        new MFCitizenSimulation.ScheduleEntry(1080, MFCitizenSimulation.Activity.SLEEP, waypoint))),
+                MFCitizenSimulation.CitizenSchedule.class);
+        saveAdvancedSample(helper, source, expected, keys, "citizen_plans", citizenId,
+                new MFCitizenSimulation.CitizenPlan(citizenId, MFCitizenSimulation.Directive.WORK,
+                        MFCitizenSimulation.Activity.WORK, waypoint, 60, "Trabajo asignado"),
+                MFCitizenSimulation.CitizenPlan.class);
+        saveAdvancedSample(helper, source, expected, keys, "resident_links", citizenId,
+                new MFCitizenSimulation.ResidentEntityLink(citizenId, entityId, "minecraft:overworld"),
+                MFCitizenSimulation.ResidentEntityLink.class);
+
+        var cityBuilding = new MFCityPlanner.Building("house-1", "small_house",
+                MFCityPlanner.District.RESIDENTIAL, 4, 64, 4, 5, 5, 0,
+                MFCityPlanner.BuildStage.FRAME, 2, 8);
+        saveAdvancedSample(helper, source, expected, keys, "city_plans", cityPlanId,
+                new MFCityPlanner.CityPlan(cityPlanId, settlementA, "minecraft:overworld",
+                        new MFCityPlanner.Bounds(-32, 32, -32, 32), List.of(cityBuilding), 3L),
+                MFCityPlanner.CityPlan.class);
+        saveAdvancedSample(helper, source, expected, keys, "city_build_links", constructionId,
+                new MFCityPlanner.ConstructionLink(cityPlanId, "house-1", constructionId),
+                MFCityPlanner.ConstructionLink.class);
+
+        UUID unitAId = UUID.randomUUID();
+        UUID unitBId = UUID.randomUUID();
+        var unitA = new MFTacticalWarfare.Unit(unitAId, factionA, 0, 0, 30, 30, 2, 8, 1,
+                80, 75, 2, MFTacticalWarfare.Stance.READY, false);
+        var unitB = new MFTacticalWarfare.Unit(unitBId, factionB, 1, 0, 28, 28, 1, 7, 1,
+                70, 70, 2, MFTacticalWarfare.Stance.BLOCKING, false);
+        UUID battleId = UUID.randomUUID();
+        saveAdvancedSample(helper, source, expected, keys, "tactical_battles", battleId,
+                new MFTacticalWarfare.Battle(battleId, factionA, factionB, factionA, 1,
+                        List.of(unitA, unitB), MFTacticalWarfare.BattleStatus.ACTIVE, null),
+                MFTacticalWarfare.Battle.class);
+        var armyColumn = new MFTacticalWarfare.ArmyColumn(UUID.randomUUID(), factionA, owner, List.of(unitAId),
+                MFTacticalWarfare.Formation.LINE, 25, 100L, 80,
+                List.of(waypoint, new MFCitizenSimulation.Waypoint("minecraft:overworld", 24, 64, -8)),
+                0, 1L);
+        saveAdvancedSample(helper, source, expected, keys, "army_columns", armyColumn.id(), armyColumn,
+                MFTacticalWarfare.ArmyColumn.class);
+        saveAdvancedSample(helper, source, expected, keys, "occupations", settlementB,
+                new MFTacticalWarfare.Occupation(settlementB, factionB, factionA, 1L, 0L, 35, false),
+                MFTacticalWarfare.Occupation.class);
+
+        var genome = new MFDragonLifecycle.DragonGenome(MFGameCatalog.Element.FIRE, 75, 68, 80, 55, 45);
+        saveAdvancedSample(helper, source, expected, keys, "dragon_genomes", dragonId,
+                new MFDragonLifecycle.DragonGenomeRecord(dragonId, owner, genome),
+                MFDragonLifecycle.DragonGenomeRecord.class);
+        var egg = new MFDragonLifecycle.DragonEgg(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), owner,
+                genome, MFDragonLifecycle.EggStatus.INCUBATING, 8, 30, 2, 65, 70);
+        saveAdvancedSample(helper, source, expected, keys, "dragon_eggs", egg.id(), egg,
+                MFDragonLifecycle.DragonEgg.class);
+        var hatchling = new MFDragonLifecycle.Hatchling(UUID.randomUUID(), owner, genome, MFDragonLifecycle.LifeStage.HATCHLING,
+                12, 28, 35, 20, 40);
+        saveAdvancedSample(helper, source, expected, keys, "dragon_hatchlings", hatchling.id(), hatchling,
+                MFDragonLifecycle.Hatchling.class);
+
+        var marriage = new MFFamilyCare.Marriage(UUID.randomUUID(), personAId, personBId, personAId,
+                true, false, MFFamilyCare.MarriageStatus.PROPOSED, 1L, -1L);
+        saveAdvancedSample(helper, source, expected, keys, "marriages", marriage.id(), marriage,
+                MFFamilyCare.Marriage.class);
+        var medicalCase = new MFFamilyCare.MedicalCase(UUID.randomUUID(), citizenId, MFFamilyCare.Condition.INJURY,
+                45, 5, MFFamilyCare.MedicalStatus.OPEN, 1L, -1L);
+        saveAdvancedSample(helper, source, expected, keys, "medical_cases", medicalCase.id(), medicalCase,
+                MFFamilyCare.MedicalCase.class);
+        saveAdvancedSample(helper, source, expected, keys, "clinics", settlementA,
+                new MFFamilyCare.Clinic(2, 65, 7, 4),
+                MFFamilyCare.Clinic.class);
+
+        var route = List.of(new MFAdventureSystems.RoutePoint("minecraft:overworld", 0, 64, 0),
+                new MFAdventureSystems.RoutePoint("minecraft:overworld", 20, 64, 0));
+        var physicalConvoy = new MFAdventureSystems.PhysicalConvoy(UUID.randomUUID(), settlementA, settlementB,
+                "minecraft:iron_ingot", 12L, 10L, 120L, route, 0, 20, 15,
+                MFAdventureSystems.ConvoyStatus.TRAVELLING, 91L);
+        saveAdvancedSample(helper, source, expected, keys, "physical_convoys", physicalConvoy.id(), physicalConvoy,
+                MFAdventureSystems.PhysicalConvoy.class);
+        var boss = MFAdventureSystems.createBoss(encounterId, "test_boss", 2, 123L);
+        saveAdvancedSample(helper, source, expected, keys, "boss_encounters", encounterId, boss,
+                MFAdventureSystems.BossEncounter.class);
+        saveAdvancedSample(helper, source, expected, keys, "boss_entities", encounterId,
+                new MFAdventureSystems.BossEntityLink(encounterId, UUID.randomUUID(),
+                        "minecraft:overworld", owner, 2L),
+                MFAdventureSystems.BossEntityLink.class);
+        var journey = new MFAdventureSystems.ExpeditionJourney(UUID.randomUUID(), expeditionId, List.of(citizenId),
+                route, 0, 20L, MFAdventureSystems.JourneyStatus.OUTBOUND, 0, 1, -1L);
+        saveAdvancedSample(helper, source, expected, keys, "expedition_journeys", journey.id(), journey,
+                MFAdventureSystems.ExpeditionJourney.class);
+
+        helper.assertTrue(expected.size() == 31, "Expected one representative record for all 31 advanced buckets");
+        helper.assertTrue(source.count("caravans") == 1 && source.count("expedition_journeys") == 1,
+                "Advanced record samples must be indexed by their stable record IDs");
+        CompoundTag saved = source.save(new CompoundTag(), helper.getLevel().registryAccess());
+        MFAdvancedSavedData restored = MFAdvancedSavedData.load(saved, helper.getLevel().registryAccess());
+        for (Map.Entry<String, Object> entry : expected.entrySet()) {
+            String bucket = entry.getKey();
+            Object value = entry.getValue();
+            helper.assertTrue(restored.count(bucket) == 1,
+                    "Advanced SavedData bucket count changed after reload: " + bucket);
+            helper.assertTrue(advancedRecordEquals(restored, bucket, keys.get(bucket), value),
+                    "Advanced SavedData record changed after reload: " + bucket + " (" + value.getClass().getSimpleName() + ")");
+        }
+        helper.succeed();
+    }
+
+    private static <T> void saveAdvancedSample(GameTestHelper helper, MFAdvancedSavedData data,
+            Map<String, Object> expected, Map<String, UUID> keys, String bucket, UUID id, T value, Class<T> type) {
+        helper.assertTrue(data.storeSimulationRecord(bucket, id, value, type),
+                "Could not insert advanced persistence sample: " + bucket);
+        expected.put(bucket, value);
+        keys.put(bucket, id);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean advancedRecordEquals(MFAdvancedSavedData data, String bucket, UUID id, Object expected) {
+        if (expected == null) return false;
+        Class<Object> type = (Class<Object>) expected.getClass();
+        return data.record(bucket, id, type).map(expected::equals).orElse(false);
     }
 
     private static boolean rejectsSchema(Runnable loader) {
