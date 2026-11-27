@@ -4,15 +4,16 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
 ## Última compilación verificada
 
-**CI #49 — SUCCESS** · commit `18d7b50156ffc89256e81c32550dd0b2eb7d4811`.
+**CI #51 — SUCCESS** · commit `98d800e727da23eddb5b1a49b320100b6fbe7a27`.
 
 - JAR: `medieval_factions-0.9.1-alpha.jar`
-- SHA-256: `12c0c6849bb083b7768855947eabd705337ec9190845ed9406f3dfb9f40f583d`
-- [Ver ejecución #49 y descargar los artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45915911949)
+- Tamaño: 1.650.075 bytes
+- SHA-256: `5acfc06c96c13aea83b761b9dc04b47a87f679e2fca66385e24a13a6ebd7b88e`
+- [Ver ejecución #51 y descargar artefactos](https://github.com/malg11lopez-art/med_fac/actions/runs/45917038330)
 
 ## Funciones integradas en esta alpha
 
-**Sincronización de skins:** 86 skins, selección persistente por jugador y sincronización servidor-cliente con actualización al entrar, respawnear y desconectarse. Está compilada y validada estáticamente; falta una sesión real de dos clientes y todavía no se aplica a NPC.
+**Sincronización de skins:** 86 skins, selección persistente por jugador y sincronización servidor-cliente con actualización al entrar, respawnear y desconectarse. Compilada y validada estáticamente; falta una sesión real de dos clientes y todavía no se aplica a NPC.
 
 **Audio:** 75 SoundEvents y 75 OGG validados, con referencias detectadas en keyframes o código de gameplay. Se han añadido disparadores para pasos, espada, parry, armadura, puertas, crafting, fundición, ambientes, progreso, caballo y habilidades. El cliente headless no acredita mezcla ni escucha humana.
 
@@ -20,7 +21,7 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 
 **Interfaz:** panel rápido en la tecla **O** con acceso a ficha, talentos, habilidades, compañeros, facciones, calendario, dashboard y skins. Es un panel de acceso a comandos, no una GUI integral de gestión.
 
-## Validación automatizada #49
+## Validación automatizada #51
 
 - 276 aserciones de dominio superadas.
 - 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG: cero errores y advertencias.
@@ -28,6 +29,7 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 - `gradle clean test build` y NeoForge GameTests: PASS.
 - Servidor dedicado y cliente headless: arranque y recarga de recursos correctos.
 - JAR `0.9.1-alpha`: descriptor e integridad verificados.
+- Documentación de estado, matriz y plan actualizada dentro del ZIP de fuentes.
 
 ## Pendiente antes de una versión completa
 

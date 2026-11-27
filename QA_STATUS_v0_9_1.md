@@ -1,10 +1,11 @@
 # Auditoría general — MEDIEVAL FACTIONS v0.9.1-alpha
 
 **Fecha:** 27-11-2026  
-**Ejecución:** [GitHub Actions #49 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/45915911949)  
-**Commit:** `18d7b50156ffc89256e81c32550dd0b2eb7d4811`  
+**Ejecución:** [GitHub Actions #51 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/45917038330)  
+**Commit:** `98d800e727da23eddb5b1a49b320100b6fbe7a27`  
 **JAR:** `medieval_factions-0.9.1-alpha.jar`  
-**SHA-256:** `12c0c6849bb083b7768855947eabd705337ec9190845ed9406f3dfb9f40f583d`
+**Tamaño:** 1.650.075 bytes  
+**SHA-256:** `5acfc06c96c13aea83b761b9dc04b47a87f679e2fca66385e24a13a6ebd7b88e`
 
 ## Resumen ejecutivo
 
@@ -37,6 +38,7 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 4. Selección de objetivos mediante ray tracing de entidades limitado por la primera colisión de bloque.
 5. Panel O con accesos a comandos existentes; CI comprueba la tecla y los comandos de destino.
 6. Lookup indexado de ciudadano por UUID para reducir trabajo repetido por entidad residente.
+7. Documentación de estado, matriz de cobertura, puertas de calidad y plan de implementación actualizadas dentro del ZIP de fuentes.
 
 ## Limitaciones y trabajo no demostrado
 
@@ -58,5 +60,6 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 - Los residentes consultan `MFWorldSavedData.citizen(UUID)` en vez de reconstruir/recorrer la lista completa cada actualización.
 - Los smoke tests de cliente/servidor terminan al alcanzar marcadores de disponibilidad.
 - El JAR debe declarar exactamente `0.9.1-alpha`; el atajo del panel se valida como tecla O (79).
+- El texto del dashboard y la documentación del ZIP ya no contradicen las integraciones actuales.
 
-**Dictamen:** CI #49 acredita build, GameTests existentes y smoke startup/recarga de recursos. No acredita una partida manual completa ni el cumplimiento del Documento Maestro. El proyecto sigue siendo alpha.
+**Dictamen:** CI #51 acredita build, GameTests existentes y smoke startup/recarga de recursos. No acredita una partida manual completa ni el cumplimiento del Documento Maestro. El proyecto sigue siendo alpha.
