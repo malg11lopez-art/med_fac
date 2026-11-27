@@ -3,8 +3,10 @@ package com.medievalfactions.gametest;
 import com.medievalfactions.MedievalFactions;
 import com.medievalfactions.data.MFAdvancedSavedData;
 import com.medievalfactions.data.MFFactionSavedData;
+import com.medievalfactions.data.MFFactionSavedData;
 import com.medievalfactions.data.MFWorldSavedData;
 import com.medievalfactions.domain.MFCitizenSimulation;
+import com.medievalfactions.domain.MFAdvancedSystems;
 import com.medievalfactions.domain.MFCitizenState;
 import com.medievalfactions.domain.MFRaceBiology;
 import com.medievalfactions.domain.MFWorkOrderState;
@@ -196,6 +198,69 @@ public final class MFRegistryGameTests {
         helper.assertTrue(rejectsSchema(() -> MFAdvancedSavedData.load(malformed, registries)),
                 "Advanced SavedData accepted a non-integer schema marker");
 
+        helper.succeed();
+    }
+
+
+    /** Verifies that autonomous residents only start work when every recipe ingredient is in stock. */
+    @GameTest(template = "empty", timeoutTicks = 40)
+    public static void autonomousResidentsReserveFundedWorkWithoutDuplicates(GameTestHelper helper) {
+        UUID factionId = UUID.randomUUID();
+        MFWorldSavedData world = new MFWorldSavedData();
+        var settlement = world.createSettlement(factionId, "Worker Test Town")
+                .orElseThrow(() -> new AssertionError("Could not create worker test settlement"));
+        helper.assertTrue(world.addSettlementFood(settlement.id(), 10L), "Could not provide worker food");
+        var secure = world.settlement(settlement.id()).orElseThrow().withSecurityAndInfrastructure(80, 50);
+        helper.assertTrue(world.replaceSettlement(secure), "Could not secure worker test settlement");
+
+        MFCitizenState firstWorker = MFCitizenState.create(factionId, settlement.id(), "Autonomous Carpenter",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.CARPENTER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(firstWorker, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register autonomous carpenter");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:oak_log", 1L),
+                "Could not stock the funded recipe");
+
+        MFAdvancedSavedData advanced = new MFAdvancedSavedData();
+        MFFactionSavedData factions = new MFFactionSavedData();
+        // First server day establishes the existing world baseline; the next day
+        // exercises the same advanceToDay -> planNpcPopulation path as MFWorldEvents.
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        helper.assertTrue(advanced.record("npc_directives", firstWorker.id(),
+                        MFAdvancedSystems.NpcDirective.class).isPresent(),
+                "Daily simulation did not process the active worker");
+        var directive = advanced.record("npc_directives", firstWorker.id(),
+                MFAdvancedSystems.NpcDirective.class).orElse(null);
+        helper.assertTrue(directive != null && directive.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK,
+                "Funded carpenter did not receive a continue-work directive");
+        var firstOrders = world.workOrders(settlement.id());
+        helper.assertTrue(firstOrders.size() == 1 && firstOrders.get(0).recipeId().equals("cut_planks")
+                        && firstOrders.get(0).status() == MFWorkOrderState.Status.RUNNING,
+                "Autonomous carpenter did not start the matching recipe");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:oak_log", 0L) == 0L,
+                "Autonomous recipe did not reserve its ingredient");
+
+        // Replanning an already-employed worker must not create a second active order.
+        advanced.advanceToDay(world, factions, 2L);
+        helper.assertTrue(world.workOrders(settlement.id()).stream()
+                        .filter(order -> order.workerId().equals(firstWorker.id()) && order.active()).count() == 1L,
+                "Repeated NPC planning duplicated the active production order");
+
+        // A second carpenter cannot start a recipe after the only log has been reserved.
+        MFCitizenState secondWorker = MFCitizenState.create(factionId, settlement.id(), "Unfunded Carpenter",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.CARPENTER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(secondWorker, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register second carpenter");
+        advanced.advanceToDay(world, factions, 3L);
+        helper.assertTrue(world.workOrders(settlement.id()).stream()
+                        .filter(order -> order.workerId().equals(secondWorker.id()) && order.active()).findAny().isEmpty(),
+                "Unfunded carpenter started work without the required materials");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:oak_planks", 0L) == 0L,
+                "Autonomous planning fabricated recipe output before completion");
         helper.succeed();
     }
 
