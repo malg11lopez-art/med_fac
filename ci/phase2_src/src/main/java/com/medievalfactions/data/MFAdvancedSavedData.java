@@ -41,6 +41,7 @@ import static com.medievalfactions.domain.MFGameCatalog.*;
 public final class MFAdvancedSavedData extends SavedData {
     private static final String DATA_ID = "medieval_factions_advanced_v1";
     private static final int SCHEMA_VERSION = 1;
+    private static final String BUCKET_SCHEMA_KEY = "advanced_bucket_schema_versions";
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     private static final int MAX_RECORDS_PER_BUCKET = 25_000;
     private static final int MAX_RECORD_JSON_CHARS = 32_000;
@@ -79,6 +80,19 @@ public final class MFAdvancedSavedData extends SavedData {
             Map.entry("boss_encounters", com.medievalfactions.domain.MFAdventureSystems.BossEncounter.class),
             Map.entry("boss_entities", com.medievalfactions.domain.MFAdventureSystems.BossEntityLink.class),
             Map.entry("expedition_journeys", com.medievalfactions.domain.MFAdventureSystems.ExpeditionJourney.class));
+
+    /**
+     * Each advanced record bucket evolves independently. Bump only the affected bucket
+     * when its JSON record contract changes, and add an explicit migration before loading it.
+     */
+    private static final Map<String, Integer> BUCKET_SCHEMA_VERSIONS = currentBucketSchemaVersions();
+
+    private static Map<String, Integer> currentBucketSchemaVersions() {
+        LinkedHashMap<String, Integer> versions = new LinkedHashMap<>();
+        RECORD_TYPES.keySet().forEach(bucket -> versions.put(bucket, 1));
+        // Future record-shape changes must bump only their bucket and add a migration in load().
+        return Map.copyOf(versions);
+    }
 
     private final Map<String, LinkedHashMap<UUID, Object>> buckets = new LinkedHashMap<>();
     private final Map<UUID, List<BlockPlacement>> dungeonPlacementCache = new LinkedHashMap<>();
@@ -1377,6 +1391,7 @@ public final class MFAdvancedSavedData extends SavedData {
     // ------------------------------------------------------------------
     public static MFAdvancedSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         MFSavedDataSchema.requireSupported(tag, SCHEMA_VERSION, DATA_ID);
+        MFSavedDataSchema.requireBucketVersions(tag, BUCKET_SCHEMA_KEY, BUCKET_SCHEMA_VERSIONS, DATA_ID);
         MFAdvancedSavedData data = new MFAdvancedSavedData();
         CompoundTag root = tag.getCompound("advanced_records");
         long totalJsonChars = 0L;
@@ -1405,6 +1420,9 @@ public final class MFAdvancedSavedData extends SavedData {
     @Override public synchronized CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt("schema_version", SCHEMA_VERSION);
         tag.putLong("last_advanced_day", lastAdvancedDay);
+        CompoundTag bucketSchemas = new CompoundTag();
+        BUCKET_SCHEMA_VERSIONS.forEach(bucketSchemas::putInt);
+        tag.put(BUCKET_SCHEMA_KEY, bucketSchemas);
         CompoundTag root = new CompoundTag();
         long totalJsonChars = 0L;
         for (String bucket : RECORD_TYPES.keySet()) {
