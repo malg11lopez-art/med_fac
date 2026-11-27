@@ -5,6 +5,9 @@ import com.medievalfactions.data.MFAdvancedSavedData;
 import com.medievalfactions.data.MFFactionSavedData;
 import com.medievalfactions.data.MFWorldSavedData;
 import com.medievalfactions.domain.MFCitizenSimulation;
+import com.medievalfactions.domain.MFCitizenState;
+import com.medievalfactions.domain.MFRaceBiology;
+import com.medievalfactions.domain.MFWorkOrderState;
 import com.medievalfactions.domain.MFGameCatalog;
 import com.medievalfactions.registry.MFBlocks;
 import com.medievalfactions.registry.MFEntities;
@@ -120,14 +123,36 @@ public final class MFRegistryGameTests {
                 .orElseThrow(() -> new AssertionError("Could not create GameTest settlement"));
         helper.assertTrue(world.addSettlementFood(settlement.id(), 37L), "Could not seed settlement food");
         helper.assertTrue(world.adjustSettlementTreasury(settlement.id(), 275L), "Could not seed settlement treasury");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:oak_log", 2L),
+                "Could not seed production ingredients");
+        MFCitizenState carpenter = MFCitizenState.create(faction.id(), settlement.id(), "GameTest Carpenter",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.CARPENTER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(carpenter, faction.primaryRace()), "Could not register production worker");
+        var workOrder = world.startWorkOrder(settlement.id(), carpenter.id(), "cut_planks")
+                .orElseThrow(() -> new AssertionError("Could not reserve ingredients for production"));
 
         CompoundTag worldTag = world.save(new CompoundTag(), registries);
         MFWorldSavedData loadedWorld = MFWorldSavedData.load(worldTag, registries);
         helper.assertTrue(loadedWorld.profile(founder).map(p -> p.element() == profile.element()).orElse(false),
                 "Character profile was lost during real NBT round-trip");
         helper.assertTrue(loadedWorld.settlement(settlement.id())
-                        .map(s -> s.foodRations() == 37L && s.treasuryCopper() == 275L).orElse(false),
-                "Settlement stock/treasury was lost during real NBT round-trip");
+                        .map(s -> s.foodRations() == 37L && s.treasuryCopper() == 275L
+                                && s.inventory().getOrDefault("minecraft:oak_log", 0L) == 1L)
+                        .orElse(false),
+                "Settlement stock/treasury or reserved input was lost during real NBT round-trip");
+        helper.assertTrue(loadedWorld.citizen(carpenter.id()).isPresent(),
+                "Production worker was lost during real NBT round-trip");
+        helper.assertTrue(loadedWorld.workOrders(settlement.id()).stream()
+                        .anyMatch(order -> order.id().equals(workOrder.id()) && order.status() == MFWorkOrderState.Status.RUNNING),
+                "Running production order was lost during real NBT round-trip");
+        loadedWorld.advanceOneDay();
+        helper.assertTrue(loadedWorld.workOrders(settlement.id()).stream()
+                        .anyMatch(order -> order.id().equals(workOrder.id()) && order.status() == MFWorkOrderState.Status.COMPLETED),
+                "Restored production order did not resume to completion");
+        helper.assertTrue(loadedWorld.settlement(settlement.id())
+                        .map(value -> value.inventory().getOrDefault("minecraft:oak_planks", 0L) == 4L).orElse(false),
+                "Restored production order did not create its output exactly once");
 
         MFAdvancedSavedData advanced = new MFAdvancedSavedData();
         UUID citizenId = UUID.randomUUID();
