@@ -660,10 +660,14 @@ public final class MFRegistryGameTests {
                 MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
         helper.assertTrue(world.addCitizen(farmer, faction.primaryRace()), "Could not register farmer");
 
-        BlockPos crop = helper.absolutePos(new BlockPos(2, 2, 2));
+        BlockPos crop = helper.absolutePos(new BlockPos(2, 3, 2));
         BlockPos standing = crop.above();
-        level.setBlock(crop.below(), Blocks.FARMLAND.defaultBlockState(), 3);
-        level.setBlock(crop, Blocks.CARROTS.defaultBlockState().setValue(CropBlock.AGE, 7), 3);
+        helper.assertTrue(level.setBlock(crop.below(), Blocks.FARMLAND.defaultBlockState(), 3),
+                "Could not place farmer test farmland");
+        helper.assertTrue(level.setBlock(crop, Blocks.CARROTS.defaultBlockState().setValue(CropBlock.AGE, 7), 3),
+                "Could not place mature carrot crop");
+        helper.assertTrue(level.getBlockState(crop).is(Blocks.CARROTS),
+                "Mature carrot crop was not present before resident arrival");
 
         String dimension = level.dimension().location().toString();
         var schedule = new MFCitizenSimulation.CitizenSchedule(farmer.id(), List.of(
@@ -672,7 +676,9 @@ public final class MFRegistryGameTests {
                                 standing.getX(), standing.getY(), standing.getZ()))));
         helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
                 "Could not save farmer work schedule");
-        // Harvesting only needs the saved schedule; avoid the shared daily counter.
+        // Initialize the daily plan using the same progression as the server tick.
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
         advanced.updateScheduledNpcPlans(world, 0);
         helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
                         MFCitizenSimulation.CitizenPlan.class)
