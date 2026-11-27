@@ -69,6 +69,9 @@ public final class MFMainScreen extends Screen {
                     MFPlayerSkinClient.cycleSkin();
                     requestPage(MFManagementClientState.page());
                 }).bounds(panelLeft + 260, footerY, 100, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Planificar IA"),
+                button -> replanResidents())
+                .bounds(panelLeft + 366, footerY, 76, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Cerrar"),
                 button -> Minecraft.getInstance().setScreen(null))
                 .bounds(panelLeft + panelWidth - 112, footerY, 100, 20).build());
@@ -98,6 +101,16 @@ public final class MFMainScreen extends Screen {
         }
         minecraft.getConnection().sendCommand(command);
         actionInput.setValue("");
+        requestPage(MFManagementClientState.page());
+    }
+
+    /** Requests the server-authoritative daily resident planner. The server enforces operator permission. */
+    private void replanResidents() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.getConnection() == null) return;
+        minecraft.getConnection().sendCommand("mf advanced npc plan");
+        minecraft.player.displayClientMessage(
+                Component.literal("Solicitud enviada: recalculando horarios y trabajo de habitantes."), true);
         requestPage(MFManagementClientState.page());
     }
 
