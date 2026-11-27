@@ -183,6 +183,8 @@ public final class MFResidentEntity extends MFAnimatedMob {
                             workActionTrigger = performShepherdWork(serverLevel, worldData, citizen, target);
                         } else if (citizen.profession() == Profession.RANCHER) {
                             workActionTrigger = performRancherWork(serverLevel, worldData, citizen, target);
+                        } else if (citizen.profession() == Profession.APICULTURIST) {
+                            workActionTrigger = performApiaryWork(serverLevel, worldData, citizen, target);
                         } else {
                             workActionTrigger = performPhysicalResourceWork(serverLevel, worldData, citizen, target);
                         }
@@ -338,6 +340,50 @@ public final class MFResidentEntity extends MFAnimatedMob {
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
                 target.getX(), target.getY() + 1.0D, target.getZ(), 3, 0.2D, 0.18D, 0.2D, 0.01D);
         return "harvest";
+    }
+
+    /**
+     * Collects honey from a full bee nest or hive. As in vanilla, a lit campfire directly below
+     * the hive is required so harvesting does not provoke its bees. A glass bottle is consumed.
+     */
+    private String performApiaryWork(ServerLevel level, MFWorldSavedData worldData,
+                                     MFCitizenState citizen, BlockPos worksite) {
+        if (level == null || worldData == null || citizen == null || worksite == null
+                || citizen.profession() != Profession.APICULTURIST) return null;
+        long now = level.getGameTime();
+        if (lastProfessionWorkTick >= 0L && now >= lastProfessionWorkTick
+                && now - lastProfessionWorkTick < 600L) return null;
+        for (int dy = 1; dy >= -1; dy--) {
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dz = -2; dz <= 2; dz++) {
+                    BlockPos hivePos = worksite.offset(dx, dy, dz);
+                    BlockPos smokePos = hivePos.below();
+                    if (!level.hasChunkAt(hivePos) || !level.hasChunkAt(smokePos)) continue;
+                    var hive = level.getBlockState(hivePos);
+                    if ((!hive.is(Blocks.BEEHIVE) && !hive.is(Blocks.BEE_NEST))
+                            || !hive.hasProperty(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL)
+                            || hive.getValue(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL) < 5) continue;
+                    var campfire = level.getBlockState(smokePos);
+                    if ((!campfire.is(Blocks.CAMPFIRE) && !campfire.is(Blocks.SOUL_CAMPFIRE))
+                            || !campfire.getValue(net.minecraft.world.level.block.CampfireBlock.LIT)) continue;
+                    var depleted = hive.setValue(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL, 0);
+                    if (!level.setBlock(hivePos, depleted, 3)) continue;
+                    if (!worldData.creditResidentHoneyBottle(citizen.settlementId(), citizen.id(), 1L, 10L)) {
+                        level.setBlock(hivePos, hive, 3);
+                        continue;
+                    }
+                    lastProfessionWorkTick = now;
+                    level.playSound(null, hivePos, net.minecraft.sounds.SoundEvents.BOTTLE_FILL,
+                            net.minecraft.sounds.SoundSource.BLOCKS, 0.7F,
+                            0.95F + level.random.nextFloat() * 0.1F);
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                            hivePos.getX() + 0.5D, hivePos.getY() + 0.6D, hivePos.getZ() + 0.5D,
+                            3, 0.18D, 0.15D, 0.18D, 0.01D);
+                    return "harvest";
+                }
+            }
+        }
+        return null;
     }
 
     /**
