@@ -324,6 +324,38 @@ public final class MFWorldSavedData extends SavedData {
     }
 
     /**
+     * Atomically exchanges one empty settlement bucket for a milk bucket produced by a rancher.
+     * The bucket debit, milk output and profession experience either all commit or none do.
+     */
+    public synchronized boolean creditResidentMilk(UUID settlementId, UUID citizenId,
+                                                    long amount, long professionXp) {
+        MFSettlementState settlement = settlements.get(settlementId);
+        MFCitizenState rancher = citizens.get(citizenId);
+        if (settlement == null || rancher == null || !settlement.id().equals(rancher.settlementId())
+                || !settlement.factionId().equals(rancher.factionId())
+                || rancher.profession() != Profession.RANCHER || rancher.status() != CitizenStatus.ACTIVE
+                || rancher.ageStage() == AgeStage.BABY || rancher.ageStage() == AgeStage.CHILD
+                || amount != 1L || professionXp <= 0L || professionXp > 1_000L
+                || settlement.inventory().getOrDefault("minecraft:bucket", 0L) < amount
+                || !settlement.canAccept("minecraft:milk_bucket", amount)) return false;
+        LinkedHashMap<String, Long> nextStock = new LinkedHashMap<>(settlement.inventory());
+        MFCitizenState nextRancher;
+        try {
+            long buckets = nextStock.getOrDefault("minecraft:bucket", 0L);
+            if (buckets == amount) nextStock.remove("minecraft:bucket");
+            else nextStock.put("minecraft:bucket", buckets - amount);
+            nextStock.merge("minecraft:milk_bucket", amount, Math::addExact);
+            nextRancher = rancher.awardProfessionXp(professionXp);
+        } catch (ArithmeticException ex) {
+            return false;
+        }
+        settlements.put(settlementId, settlement.withInventory(nextStock));
+        citizens.put(citizenId, nextRancher);
+        setDirty();
+        return true;
+    }
+
+    /**
      * Credits one fish caught by a working fisher. Output and profession XP are one transaction;
      * only the fisher profession may create raw fish products through this path.
      */
