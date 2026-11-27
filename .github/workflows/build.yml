@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: medieval-factions-build-${{ github.ref }}
@@ -57,6 +57,29 @@ jobs:
 
       - name: Apply NeoForge 1.21.1 compile fixes
         run: python ci/apply_build_patches.py "${{ steps.archive.outputs.project_dir }}"
+      - name: Export the patched source snapshot for phase implementation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROJECT_DIR="${{ steps.archive.outputs.project_dir }}"
+          SNAPSHOT_DIR="$RUNNER_TEMP/medieval-factions-phase2-source"
+          mkdir -p "$SNAPSHOT_DIR"
+          rsync -a \
+            --exclude build/ \
+            --exclude .gradle/ \
+            --exclude .idea/ \
+            --exclude .git/ \
+            "$PROJECT_DIR/" "$SNAPSHOT_DIR/"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --orphan work/phase2-source-snapshot
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -a "$SNAPSHOT_DIR/." .
+          git add -A
+          git commit -m "build: export patched source snapshot for phase implementation"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/work/phase2-source-snapshot
 
       - name: Upload patched source snapshot for QA
         uses: actions/upload-artifact@v4
