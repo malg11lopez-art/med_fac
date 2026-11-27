@@ -1,10 +1,10 @@
 # Auditoría general — MEDIEVAL FACTIONS v0.9.1-alpha
 
 **Fecha:** 27-11-2026  
-**Ejecución:** [GitHub Actions #119 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/45992737433)  
-**Commit:** `0579852f459c204abdc8a8fd69d9daf39b2dacb8`  
-**JAR:** artefacto `medieval-factions-jar-0579852f459c204abdc8a8fd69d9daf39b2dacb8`  
-**Tamaño del artefacto ZIP:** 1.599.799 bytes
+**Ejecución:** [GitHub Actions #122 — SUCCESS](https://github.com/malg11lopez-art/med_fac/actions/runs/45993385952)  
+**Commit:** `a4baf960f3af054722a0238bf6fa48ffe94bfe5f`  
+**JAR:** artefacto `medieval-factions-jar-a4baf960f3af054722a0238bf6fa48ffe94bfe5f`  
+**Tamaño del artefacto ZIP:** 1.599.999 bytes
 
 ## Resumen ejecutivo
 
@@ -37,7 +37,7 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 4. Selección de objetivos mediante ray tracing de entidades limitado por la primera colisión de bloque.
 5. Panel O con accesos a comandos existentes; CI comprueba la tecla y los comandos de destino.
 6. Lookup indexado de ciudadano por UUID para reducir trabajo repetido por entidad residente.
-7. Documentación de estado, matriz de cobertura, puertas de calidad y plan de implementación actualizadas dentro del ZIP de fuentes.\n8. GameTest de serialización/recarga de los 31 buckets avanzados (CI #119).
+7. Documentación de estado, matriz de cobertura, puertas de calidad y plan de implementación actualizadas dentro del ZIP de fuentes.\n8. GameTest de serialización/recarga de los 31 buckets avanzados; CI también verifica la acción de planificación de la GUI y el inicio real de una receta al llegar un residente a una estación física (CI #122).
 
 ## Limitaciones y trabajo no demostrado
 
@@ -61,4 +61,4 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 - El JAR debe declarar exactamente `0.9.1-alpha`; el atajo del panel se valida como tecla O (79).
 - El texto del dashboard y la documentación del ZIP ya no contradicen las integraciones actuales.
 
-**Dictamen:** CI #119 acredita build NeoForge, 276 aserciones de dominio, SavedData stub, compatibilidad de esquemas, round-trip NBT/JSON en los 31 buckets avanzados, 7 GameTests, arranque cliente/servidor y conexión real con sincronización de skin. No acredita una partida manual completa, evaluación visual/auditiva humana, pruebas prolongadas con varios jugadores ni el cumplimiento del Documento Maestro. El proyecto sigue siendo alpha.
+**Dictamen:** CI #122 acredita build NeoForge, 276 aserciones de dominio, SavedData stub, compatibilidad de esquemas, round-trip NBT/JSON en los 31 buckets avanzados, 7 GameTests, arranque cliente/servidor y conexión real con sincronización de skin. No acredita una partida manual completa, evaluación visual/auditiva humana, pruebas prolongadas con varios jugadores ni el cumplimiento del Documento Maestro. El proyecto sigue siendo alpha.
