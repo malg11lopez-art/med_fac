@@ -55,6 +55,21 @@ public final class MFRegistryGameTests {
     private MFRegistryGameTests() {}
 
     @GameTest(template = "empty", timeoutTicks = 20)
+    public static void residentProfessionAppearanceVariantsAreMapped(GameTestHelper helper) {
+        helper.assertTrue(MFResidentEntity.appearanceFor(MFGameCatalog.Profession.FARMER) == 1,
+                "Farmers must use the farmer clothing texture");
+        helper.assertTrue(MFResidentEntity.appearanceFor(MFGameCatalog.Profession.BLACKSMITH) == 2,
+                "Blacksmiths must use the smith clothing texture");
+        helper.assertTrue(MFResidentEntity.appearanceFor(MFGameCatalog.Profession.ALCHEMIST) == 3,
+                "Alchemists must use the mage clothing texture");
+        helper.assertTrue(MFResidentEntity.appearanceFor(MFGameCatalog.Profession.TRADER) == 4,
+                "Traders must use the merchant clothing texture");
+        helper.assertTrue(MFResidentEntity.appearanceFor(MFGameCatalog.Profession.MINER) == 0,
+                "Unmapped professions must retain the generic civilian texture");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 20)
     public static void managementDashboardAccessAndThrottleAreEnforced(GameTestHelper helper) {
         helper.assertTrue(MFManagementAccessRules.canViewGlobalDashboard(true),
                 "Operators must retain access to the global management dashboard");
