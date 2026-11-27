@@ -181,6 +181,8 @@ public final class MFResidentEntity extends MFAnimatedMob {
                             workActionTrigger = performFishingWork(serverLevel, worldData, citizen, target);
                         } else if (citizen.profession() == Profession.SHEPHERD) {
                             workActionTrigger = performShepherdWork(serverLevel, worldData, citizen, target);
+                        } else if (citizen.profession() == Profession.RANCHER) {
+                            workActionTrigger = performRancherWork(serverLevel, worldData, citizen, target);
                         } else {
                             workActionTrigger = performPhysicalResourceWork(serverLevel, worldData, citizen, target);
                         }
@@ -309,6 +311,33 @@ public final class MFResidentEntity extends MFAnimatedMob {
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
                 target.getX(), target.getY() + 0.8D, target.getZ(), 4, 0.22D, 0.18D, 0.22D, 0.02D);
         return "shear";
+    }
+
+    /**
+     * Milks one nearby adult cow. A real empty bucket must be present in settlement stock;
+     * the inventory transaction converts it into a milk bucket before the action is reported.
+     */
+    private String performRancherWork(ServerLevel level, MFWorldSavedData worldData,
+                                      MFCitizenState citizen, BlockPos worksite) {
+        if (level == null || worldData == null || citizen == null || worksite == null
+                || citizen.profession() != Profession.RANCHER) return null;
+        long now = level.getGameTime();
+        if (lastProfessionWorkTick >= 0L && now >= lastProfessionWorkTick
+                && now - lastProfessionWorkTick < 200L) return null;
+        var cows = level.getEntitiesOfClass(net.minecraft.world.entity.animal.Cow.class,
+                new net.minecraft.world.phys.AABB(worksite).inflate(4.0D),
+                animal -> animal.isAlive() && !animal.isBaby());
+        var target = cows.stream().min(java.util.Comparator.comparingDouble(
+                animal -> animal.distanceToSqr(worksite.getX() + 0.5D, worksite.getY() + 0.5D, worksite.getZ() + 0.5D)))
+                .orElse(null);
+        if (target == null || !worldData.creditResidentMilk(
+                citizen.settlementId(), citizen.id(), 1L, 10L)) return null;
+        lastProfessionWorkTick = now;
+        level.playSound(null, target.blockPosition(), net.minecraft.sounds.SoundEvents.BUCKET_FILL,
+                net.minecraft.sounds.SoundSource.NEUTRAL, 0.7F, 0.95F + level.random.nextFloat() * 0.1F);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                target.getX(), target.getY() + 1.0D, target.getZ(), 3, 0.2D, 0.18D, 0.2D, 0.01D);
+        return "harvest";
     }
 
     /**
