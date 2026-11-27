@@ -729,8 +729,8 @@ phase2_root = Path(__file__).resolve().parent / "phase2_src"
 if not phase2_root.is_dir():
     raise SystemExit("Phase-two source overlay is missing.")
 phase2_files = sorted(path for path in phase2_root.rglob("*") if path.is_file())
-if len(phase2_files) < 16:
-    raise SystemExit(f"Phase-two source overlay is incomplete: expected at least 16 files, found {len(phase2_files)}")
+if len(phase2_files) < 17:
+    raise SystemExit(f"Phase-two source overlay is incomplete: expected at least 17 files, found {len(phase2_files)}")
 for source_file in phase2_files:
     relative = source_file.relative_to(phase2_root)
     target_file = project / relative
