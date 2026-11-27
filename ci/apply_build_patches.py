@@ -687,4 +687,38 @@ p0 = """## P0 — Plataforma y compilación reproducible (completado en CI #50)
 plan_text = plan_text[:p0_start] + p0 + plan_text[p1_start:]
 plan_file.write_text(plan_text, encoding="utf-8")
 print("Updated PROJECT_STATUS, README_ES, SYSTEM_COMPLETION_MATRIX and NEXT_IMPLEMENTATION_PLAN.")
+
+# Mark server/client skin-sync packet handling so CI can run a real client->server->client join test.
+network_overlay_dir = Path(__file__).resolve().parent / "overlays"
+network_overlay_parts = sorted(network_overlay_dir.glob("network_packet_log_part*.b64")) if network_overlay_dir.exists() else []
+server_network_file = root / "network/MFPlayerSkinServerNetwork.java"
+client_skin_file = root / "client/MFPlayerSkinClient.java"
+network_ready = (
+    "MF_SKIN_SELECTION_ACCEPTED" in server_network_file.read_text(encoding="utf-8")
+    and "MF_SKIN_SYNC_RECEIVED" in client_skin_file.read_text(encoding="utf-8")
+)
+if network_ready:
+    print("Network skin selection/sync diagnostic markers already present.")
+elif network_overlay_parts:
+    network_payload = "".join(part.read_text(encoding="ascii").strip() for part in network_overlay_parts)
+    try:
+        network_patch_bytes = gzip.decompress(base64.b64decode(network_payload, validate=True))
+    except Exception as exc:
+        raise SystemExit(f"Could not decode network packet diagnostic patch: {exc}")
+    network_result = subprocess.run(
+        ["patch", "--batch", "--forward", "-p1"],
+        cwd=project,
+        input=network_patch_bytes,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(network_result.stdout.decode("utf-8", errors="replace"))
+    if network_result.returncode != 0:
+        raise SystemExit(f"Network packet diagnostic patch failed with exit code {network_result.returncode}")
+    if "MF_SKIN_SELECTION_ACCEPTED" not in server_network_file.read_text(encoding="utf-8") or "MF_SKIN_SYNC_RECEIVED" not in client_skin_file.read_text(encoding="utf-8"):
+        raise SystemExit("Network packet diagnostic patch did not install both markers.")
+    print("Installed skin packet acceptance/round-trip diagnostic markers.")
+else:
+    raise SystemExit("Network packet diagnostic patch bundle is missing.")
+
 print("All CI compile and packaging patches applied successfully.")

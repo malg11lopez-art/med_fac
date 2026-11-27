@@ -8,6 +8,7 @@ on:
       - 'ci/verify_mod_jar.sh'
       - 'ci/smoke_server_start.sh'
       - 'ci/smoke_client_start.sh'
+      - 'ci/smoke_multiplayer_join.sh'
       - 'ci/feature_patch/**'
       - 'ci/overlays/**'
       - 'ci/verify_sound_preview.py'
@@ -123,6 +124,9 @@ jobs:
       - name: Boot headless Minecraft client and reload assets
         working-directory: ${{ steps.archive.outputs.project_dir }}
         run: bash "$GITHUB_WORKSPACE/ci/smoke_client_start.sh"
+      - name: Verify live client/server join and skin packet round-trip
+        working-directory: ${{ steps.archive.outputs.project_dir }}
+        run: bash "$GITHUB_WORKSPACE/ci/smoke_multiplayer_join.sh"
 
       - name: Upload compiled JAR
         uses: actions/upload-artifact@v4
