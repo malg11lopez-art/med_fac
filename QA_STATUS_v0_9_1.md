@@ -30,6 +30,10 @@ La build actual compila para Minecraft 1.21.1 / NeoForge 21.1.267, ejecuta GameT
 | Arranque de cliente y recarga de recursos | PASS |
 | Artefacto publicado | PASS |
 
+## Fase 8 — cosecha autónoma en validación
+
+La rama `feat/phase8-autonomous-crop-harvest` incluye cosecha física por residentes agricultores y un GameTest de integración. La ejecución CI #120 quedó `cancelled` en `gradle clean test build`; GameTests, smoke tests y publicación del JAR fueron omitidos. Esta mejora no forma parte de los resultados acreditados por CI #126 ni se marca integrada en `main`.
+
 ## Mejoras funcionales incluidas
 
 1. Sincronización servidor-cliente y persistencia de las 86 skins. La selección se conserva en NBT por jugador, se difunde al cambiar y se reenvía al entrar/respawnear. El servidor valida índices y limita la frecuencia.
