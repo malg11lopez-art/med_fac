@@ -22,7 +22,7 @@ Este plan prioriza dependencias reales y entregas comprobables. Una mecánica so
 - [x] Conectar clínica con DOCTOR activo, cama y pociones reales.
 - [x] Conectar ruta de expedición a NPC residentes materializados y cargados en la misma dimensión; el avance depende de la llegada de todos los miembros a cada waypoint.
 - [x] 276 aserciones de dominio, SavedData stub smoke test y validación de recursos pasan.
-- [x] Compilación real NeoForge, GameTests y smoke startup de servidor/cliente headless (CI #50).
+- [x] Compilación real NeoForge, cinco GameTests y smoke startup de servidor/cliente headless más conexión cliente-servidor (CI #90).
 - [ ] Partida manual, audio/animaciones visuales y sesión de dos clientes.
 
 ## P0 — Plataforma y compilación reproducible (completado en CI #50)
@@ -48,11 +48,10 @@ Este plan prioriza dependencias reales y entregas comprobables. Una mecánica so
 
 1. Conectar el A* 3D al mundo (colisión, suelo, puertas, escalera, agua, peligros y chunks) o retirar ese A* si se decide usar navegación vanilla; no mantener dos caminos contradictorios.
 2. [x] Asignación autónoma inicial de recetas por profesión desde el ciclo diario, con comprobación de stock y reserva atómica de ingredientes (GameTest real CI #90).
-3. Vincular trabajadores a estaciones físicas y añadir tareas de campo de recolección/transporte; evitar que la producción sea solo una orden económica abstracta.
-4. Crear tareas visibles de campo: recolectar, transportar, construir, reparar, cocinar, comerciar, patrullar y descansar.
-5. Añadir necesidades persistentes, personalidad, memoria social, amistad/hostilidad, parejas y encuentros con cooldown.
-6. Añadir LOD regional para NPC no cargados, catch-up acotado y presupuesto de ticks configurable.
-7. Validar navegación en diferentes biomas, desniveles, interiores, puertas y chunks descargados.
+3. Vincular el trabajo a estaciones físicas y añadir tareas de campo visibles: recolectar, transportar, construir, reparar, cocinar, comerciar, patrullar y descansar; evitar que la producción sea solo una orden económica abstracta.
+4. Añadir necesidades persistentes, personalidad, memoria social, amistad/hostilidad, parejas y encuentros con cooldown.
+5. Añadir LOD regional para NPC no cargados, catch-up acotado y presupuesto de ticks configurable.
+6. Validar navegación en diferentes biomas, desniveles, interiores, puertas y chunks descargados.
 
 ## P3 — GUI completa
 
