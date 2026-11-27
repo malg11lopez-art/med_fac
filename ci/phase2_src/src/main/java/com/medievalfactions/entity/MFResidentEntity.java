@@ -123,7 +123,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
     private static boolean harvestMatureCrop(ServerLevel level, MFWorldSavedData worldData,
                                               MFCitizenState citizen, BlockPos position) {
         if (level == null || worldData == null || citizen == null || position == null
-                || citizen.profession() != Profession.FARMER) return false;
+                || citizen.profession() != Profession.FARMER || !level.hasChunkAt(position)) return false;
         var original = level.getBlockState(position);
         if (!(original.getBlock() instanceof CropBlock) || !original.hasProperty(CropBlock.AGE)) return false;
 
