@@ -331,10 +331,14 @@ public final class MFRegistryGameTests {
         helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
                 "Could not persist resident's physical workstation schedule");
 
-        // Match the real server order: advance the advanced-data day, then derive
-        // a minute plan from the saved schedule before the entity arrives.
-        advanced.advanceToDay(world, factions, 0L);
-        advanced.advanceToDay(world, factions, 1L);
+        // GameTests share the same server-wide SavedData instance. Seed the
+        // per-citizen directive directly so parallel test cases cannot race the
+        // singleton lastAdvancedDay scheduler.
+        helper.assertTrue(advanced.storeSimulationRecord("npc_directives", worker.id(),
+                        new MFAdvancedSystems.NpcDirective(worker.id(), MFAdvancedSystems.NpcIntent.WORK,
+                                80, world.simulatedDays(), "GameTest physical workstation"),
+                        MFAdvancedSystems.NpcDirective.class),
+                "Could not seed resident work directive");
         advanced.updateScheduledNpcPlans(world, 0);
         helper.assertTrue(advanced.record("citizen_plans", worker.id(),
                         MFCitizenSimulation.CitizenPlan.class).isPresent(),
@@ -409,8 +413,7 @@ public final class MFRegistryGameTests {
                                 standing.getX(), standing.getY(), standing.getZ()))));
         helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
                 "Could not save farmer work schedule");
-        advanced.advanceToDay(world, factions, 0L);
-        advanced.advanceToDay(world, factions, 1L);
+        // Harvesting only needs the saved schedule; avoid the shared daily counter.
         advanced.updateScheduledNpcPlans(world, 0);
         helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
                         MFCitizenSimulation.CitizenPlan.class)
