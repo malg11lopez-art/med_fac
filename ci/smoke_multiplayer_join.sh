@@ -11,6 +11,7 @@ CLIENT_LOG="${RUNNER_TEMP:-/tmp}/medieval-factions-network-client.log"
 PROJECT_DIR="$PWD"
 BUILD_FILE="$PROJECT_DIR/build.gradle"
 BUILD_BACKUP="${RUNNER_TEMP:-/tmp}/medieval-factions-network-build.gradle.bak"
+INIT_SCRIPT="${RUNNER_TEMP:-/tmp}/medieval-factions-network-client.init.gradle"
 PORT=25567
 : > "$SERVER_LOG"
 : > "$CLIENT_LOG"
@@ -43,17 +44,17 @@ cleanup() {
     cp "$BUILD_BACKUP" "$BUILD_FILE"
     rm -f "$BUILD_BACKUP"
   fi
+  rm -f "$INIT_SCRIPT"
 }
 trap cleanup EXIT INT TERM
 
-# ModDevGradle reads Minecraft args from the run configuration; do not pass
-# them through Gradle's --args, which are interpreted as DevLaunch main-class args.
+# Give the server a dedicated data directory. Give the client a separate
+# game directory and inject quick-play arguments directly into JavaExec.
 python - "$BUILD_FILE" "$PORT" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
-port = int(sys.argv[2])
 source = path.read_text(encoding="utf-8")
 client_anchor = "        client {\n            client()\n"
 server_anchor = "        server {\n            server()\n"
@@ -61,8 +62,6 @@ client_insert = (
     "        client {\n"
     "            client()\n"
     "            gameDirectory = project.file('run/network-client')\n"
-    "            programArgument '--quickPlayMultiplayer'\n"
-    f"            programArgument '127.0.0.1:{port}'\n"
 )
 server_insert = (
     "        server {\n"
@@ -74,8 +73,20 @@ if source.count(client_anchor) != 1 or source.count(server_anchor) != 1:
 source = source.replace(client_anchor, client_insert, 1)
 source = source.replace(server_anchor, server_insert, 1)
 path.write_text(source, encoding="utf-8")
-print("Configured isolated ModDevGradle client/server runs for the network smoke test.")
+print("Configured isolated ModDevGradle client/server game directories.")
 PY
+
+cat > "$INIT_SCRIPT" <<GRADLE
+allprojects {
+    tasks.matching { it.name == 'runClient' }.configureEach {
+        args '--quickPlayMultiplayer', '127.0.0.1:$PORT'
+        doFirst {
+            println 'MEDIEVAL FACTIONS NETWORK SMOKE: launching quick-play client at 127.0.0.1:$PORT'
+            println "MEDIEVAL FACTIONS NETWORK SMOKE: runClient args = " + args
+        }
+    }
+}
+GRADLE
 
 SERVER_DIR="$PROJECT_DIR/run/network-server"
 mkdir -p "$SERVER_DIR" "$PROJECT_DIR/run/network-client"
@@ -114,7 +125,7 @@ if ! grep -Fq "Starting Minecraft server on 127.0.0.1:$PORT" "$SERVER_LOG" \
   exit 1
 fi
 
-setsid env ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 xvfb-run -a gradle --no-daemon runClient > "$CLIENT_LOG" 2>&1 &
+setsid env ALSOFT_DRIVERS=null ALSOFT_LOGLEVEL=0 xvfb-run -a gradle --init-script "$INIT_SCRIPT" --no-daemon runClient > "$CLIENT_LOG" 2>&1 &
 CLIENT_PID=$!
 JOINED=0
 SKIN_ACCEPTED=0
