@@ -24,7 +24,9 @@ Minecraft Java 1.21.1 · NeoForge 21.1.267 · Java 21 · GeckoLib 4.9.4.
 - 276 aserciones de dominio superadas.
 - 111 JSON, 14 rigs, 75 SoundEvents y 75 OGG: cero errores y advertencias.
 - 86/86 skins y 14 comprobaciones de sincronización.
-- `gradle clean test build`: PASS; NeoForge GameTests: 8/8 PASS.\n- NBT + Gson round-trip de los 31 buckets avanzados: PASS.\n- JSON corrupto, JSON >32.000 caracteres, UUID ausente y UUID duplicado se aíslan sin perder registros válidos: PASS.
+- `gradle clean test build`: PASS; NeoForge GameTests: 8/8 PASS.
+- NBT + Gson round-trip de los 31 buckets avanzados: PASS.
+- JSON corrupto, JSON >32.000 caracteres, UUID ausente y UUID duplicado se aíslan sin perder registros válidos: PASS.
 - Servidor dedicado y cliente headless: arranque y recarga de recursos correctos.
 - JAR `0.9.1-alpha`: descriptor e integridad verificados.
 - Documentación de estado, matriz y plan actualizada dentro del ZIP de fuentes.
