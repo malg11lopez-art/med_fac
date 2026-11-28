@@ -311,6 +311,33 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:oak_planks", 0L) == 4L,
                 "Completed physical-station job did not create exactly four planks");
+        helper.assertTrue(MFWorkstationRules.supports("cut_stone_bricks", "minecraft:stonecutter"),
+                "Stonecutter recipe must require a real stonecutter");
+        helper.assertTrue(MFWorkstationRules.supports("smoke_beef", "minecraft:smoker"),
+                "Butcher recipe must accept a smoker");
+        helper.assertTrue(!MFWorkstationRules.supports("smoke_beef", "minecraft:crafting_table"),
+                "Butcher recipe must reject a crafting table");
+
+        MFCitizenState butcher = MFCitizenState.create(factionId, settlement.id(), "Settlement Butcher",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.BUTCHER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(butcher, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register butcher");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:raw_beef", 1L)
+                        && world.addSettlementStock(settlement.id(), "minecraft:coal", 1L),
+                "Could not stock butcher recipe inputs");
+        advanced.advanceToDay(world, factions, 3L);
+        var butcherOrder = advanced.startResidentWorkOrder(world, butcher.id(), "minecraft:smoker", 3L)
+                .orElseThrow(() -> new AssertionError("Butcher could not start at a smoker"));
+        helper.assertTrue(butcherOrder.recipeId().equals("smoke_beef")
+                        && world.settlement(settlement.id()).orElseThrow().inventory()
+                                .getOrDefault("minecraft:raw_beef", 0L) == 0L,
+                "Butcher recipe did not reserve its real ingredients at the smoker");
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, 4L);
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:cooked_beef", 0L) == 1L,
+                "Completed butcher work order did not create exactly one cooked beef");
         helper.succeed();
     }
 
