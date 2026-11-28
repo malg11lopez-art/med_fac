@@ -1414,6 +1414,16 @@ public final class MFRegistryGameTests {
             }
             helper.assertTrue(!recipe.inputs().isEmpty() && !recipe.outputs().isEmpty(),
                     "Recipe must consume and produce real inventory items: " + recipe.id());
+            for (String itemId : recipe.inputs().keySet()) {
+                var itemKey = net.minecraft.resources.ResourceLocation.parse(itemId);
+                helper.assertTrue(net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(itemKey).isPresent(),
+                        "Recipe input is not a registered Minecraft item: " + recipe.id() + " -> " + itemId);
+            }
+            for (String itemId : recipe.outputs().keySet()) {
+                var itemKey = net.minecraft.resources.ResourceLocation.parse(itemId);
+                helper.assertTrue(net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(itemKey).isPresent(),
+                        "Recipe output is not a registered Minecraft item: " + recipe.id() + " -> " + itemId);
+            }
         }
         helper.assertTrue(MFRecipeCatalog.recipe("craft_bow").map(r -> r.profession() == MFGameCatalog.Profession.RANGED_ARTISAN).orElse(false),
                 "Bow production must belong to the ranged artisan");
