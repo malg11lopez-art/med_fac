@@ -374,6 +374,8 @@ public final class MFRegistryGameTests {
                 "Could not register tailor");
         helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:white_wool", 2L),
                 "Could not stock tailor recipe inputs");
+        // Newly registered residents need a daily work directive before they can reserve a recipe.
+        advanced.advanceToDay(world, factions, 6L);
         var tailorOrder = advanced.startResidentWorkOrder(world, tailor.id(), "minecraft:loom", 6L)
                 .orElseThrow(() -> new AssertionError("Tailor could not start carpet recipe at loom"));
         helper.assertTrue(tailorOrder.recipeId().equals("weave_white_carpet"),
@@ -392,6 +394,7 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.addSettlementStock(settlement.id(), "medieval_factions:arcane_dust", 1L)
                         && world.addSettlementStock(settlement.id(), "minecraft:glistering_melon_slice", 1L),
                 "Could not stock alchemist recipe inputs");
+        advanced.advanceToDay(world, factions, 8L);
         helper.assertTrue(MFWorkstationRules.supports("brew_healing_tonic", "minecraft:brewing_stand"),
                 "Alchemist healing tonic must require a brewing stand");
         helper.assertTrue(!MFWorkstationRules.supports("brew_healing_tonic", "minecraft:crafting_table"),
