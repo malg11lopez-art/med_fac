@@ -1282,9 +1282,19 @@ public final class MFRegistryGameTests {
         helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
                 "Could not save farmer work schedule");
         // Initialize the daily plan using the same progression as the server tick.
+        // Initialise both layers of the autonomous decision pipeline. Scheduled plans
+        // choose the physical waypoint; the daily directive authorizes productive work.
+        // They are deliberately separate records in production, so the GameTest must
+        // exercise both just as the real server tick does.
         advanced.advanceToDay(world, factions, 0L);
+        world.advanceOneDay();
         advanced.advanceToDay(world, factions, 1L);
         advanced.updateScheduledNpcPlans(world, 0);
+        helper.assertTrue(advanced.record("npc_directives", farmer.id(),
+                        MFAdvancedSystems.NpcDirective.class)
+                        .map(directive -> directive.intent() == MFAdvancedSystems.NpcIntent.WORK
+                                || directive.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK).orElse(false),
+                "Daily simulation did not authorize the farmer to work");
         helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
                         MFCitizenSimulation.CitizenPlan.class)
                         .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK).orElse(false),
