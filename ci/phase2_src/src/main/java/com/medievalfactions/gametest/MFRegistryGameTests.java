@@ -374,9 +374,23 @@ public final class MFRegistryGameTests {
                 "Could not register tailor");
         helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:white_wool", 2L),
                 "Could not stock tailor recipe inputs");
-        // Newly registered residents need a daily work directive before they can reserve a recipe.
-        advanced.advanceToDay(world, factions, 6L);
-        var tailorOrder = advanced.startResidentWorkOrder(world, tailor.id(), "minecraft:loom", 6L)
+        // Work is scheduled by the resident's daily routine; wait for an actual WORK day
+        // instead of assuming every profession works on the same calendar day.
+        long tailorWorkDay = 6L;
+        advanced.advanceToDay(world, factions, tailorWorkDay);
+        var tailorDirective = advanced.record("npc_directives", tailor.id(),
+                MFAdvancedSystems.NpcDirective.class).orElse(null);
+        while ((tailorDirective == null || (tailorDirective.intent() != MFAdvancedSystems.NpcIntent.WORK
+                && tailorDirective.intent() != MFAdvancedSystems.NpcIntent.CONTINUE_WORK))
+                && tailorWorkDay < 20L) {
+            advanced.advanceToDay(world, factions, ++tailorWorkDay);
+            tailorDirective = advanced.record("npc_directives", tailor.id(),
+                    MFAdvancedSystems.NpcDirective.class).orElse(null);
+        }
+        helper.assertTrue(tailorDirective != null && (tailorDirective.intent() == MFAdvancedSystems.NpcIntent.WORK
+                        || tailorDirective.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK),
+                "Tailor was never assigned a work day by the autonomous schedule");
+        var tailorOrder = advanced.startResidentWorkOrder(world, tailor.id(), "minecraft:loom", tailorWorkDay)
                 .orElseThrow(() -> new AssertionError("Tailor could not start carpet recipe at loom"));
         helper.assertTrue(tailorOrder.recipeId().equals("weave_white_carpet"),
                 "Tailor selected an unexpected recipe");
@@ -394,19 +408,32 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.addSettlementStock(settlement.id(), "medieval_factions:arcane_dust", 1L)
                         && world.addSettlementStock(settlement.id(), "minecraft:glistering_melon_slice", 1L),
                 "Could not stock alchemist recipe inputs");
-        advanced.advanceToDay(world, factions, 8L);
+        long alchemistWorkDay = tailorWorkDay + 2L;
+        advanced.advanceToDay(world, factions, alchemistWorkDay);
+        var alchemistDirective = advanced.record("npc_directives", alchemist.id(),
+                MFAdvancedSystems.NpcDirective.class).orElse(null);
+        while ((alchemistDirective == null || (alchemistDirective.intent() != MFAdvancedSystems.NpcIntent.WORK
+                && alchemistDirective.intent() != MFAdvancedSystems.NpcIntent.CONTINUE_WORK))
+                && alchemistWorkDay < tailorWorkDay + 16L) {
+            advanced.advanceToDay(world, factions, ++alchemistWorkDay);
+            alchemistDirective = advanced.record("npc_directives", alchemist.id(),
+                    MFAdvancedSystems.NpcDirective.class).orElse(null);
+        }
+        helper.assertTrue(alchemistDirective != null && (alchemistDirective.intent() == MFAdvancedSystems.NpcIntent.WORK
+                        || alchemistDirective.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK),
+                "Alchemist was never assigned a work day by the autonomous schedule");
         helper.assertTrue(MFWorkstationRules.supports("brew_healing_tonic", "minecraft:brewing_stand"),
                 "Alchemist healing tonic must require a brewing stand");
         helper.assertTrue(!MFWorkstationRules.supports("brew_healing_tonic", "minecraft:crafting_table"),
                 "Alchemist recipe must reject a crafting table");
-        var alchemistOrder = advanced.startResidentWorkOrder(world, alchemist.id(), "minecraft:brewing_stand", 7L)
+        var alchemistOrder = advanced.startResidentWorkOrder(world, alchemist.id(), "minecraft:brewing_stand", alchemistWorkDay)
                 .orElseThrow(() -> new AssertionError("Alchemist could not start healing tonic recipe"));
         helper.assertTrue(alchemistOrder.recipeId().equals("brew_healing_tonic"),
                 "Alchemist selected an unexpected recipe");
         world.advanceOneDay();
-        advanced.advanceToDay(world, factions, 8L);
+        advanced.advanceToDay(world, factions, alchemistWorkDay + 1L);
         world.advanceOneDay();
-        advanced.advanceToDay(world, factions, 9L);
+        advanced.advanceToDay(world, factions, alchemistWorkDay + 2L);
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("medieval_factions:healing_potion", 0L) == 1L,
                 "Completed alchemist order did not create exactly one functional healing potion");
