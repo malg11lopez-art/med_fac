@@ -20,7 +20,10 @@ public final class MFWorkstationRules {
             "cut_stone_bricks", Set.of("minecraft:stonecutter"),
             "shape_stone_stairs", Set.of("minecraft:crafting_table", "minecraft:stonecutter"),
             "smoke_beef", Set.of("minecraft:smoker", "minecraft:furnace"),
-            "craft_leather_horse_armor", Set.of("minecraft:crafting_table")
+            "craft_leather_horse_armor", Set.of("minecraft:crafting_table"),
+            "weave_white_carpet", Set.of("minecraft:crafting_table", "minecraft:loom"),
+            "craft_redstone_repeater", Set.of("minecraft:crafting_table"),
+            "craft_observer", Set.of("minecraft:crafting_table")
     );
 
     private MFWorkstationRules() {}
