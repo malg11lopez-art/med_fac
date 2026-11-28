@@ -47,6 +47,14 @@ public final class MFRecipeCatalog {
                 Map.of("minecraft:raw_beef", 1L, "minecraft:coal", 1L), Map.of("minecraft:cooked_beef", 1L), 1, 30L));
         add(recipes, new Recipe("craft_leather_horse_armor", Profession.LEATHERWORKER,
                 Map.of("minecraft:leather", 7L), Map.of("minecraft:leather_horse_armor", 1L), 2, 65L));
+        add(recipes, new Recipe("weave_white_carpet", Profession.TAILOR,
+                Map.of("minecraft:white_wool", 2L), Map.of("minecraft:white_carpet", 3L), 1, 35L));
+        add(recipes, new Recipe("craft_redstone_repeater", Profession.ENGINEER,
+                Map.of("minecraft:redstone_torch", 2L, "minecraft:redstone", 1L, "minecraft:stone", 3L),
+                Map.of("minecraft:repeater", 1L), 1, 55L));
+        add(recipes, new Recipe("craft_observer", Profession.ENGINEER,
+                Map.of("minecraft:cobblestone", 6L, "minecraft:redstone", 2L, "minecraft:quartz", 1L),
+                Map.of("minecraft:observer", 1L), 2, 75L));
         RECIPES = Map.copyOf(recipes);
     }
 
