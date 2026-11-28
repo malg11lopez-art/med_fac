@@ -383,6 +383,30 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:white_carpet", 0L) == 3L,
                 "Completed tailor order did not create exactly three carpets");
+
+        MFCitizenState alchemist = MFCitizenState.create(factionId, settlement.id(), "Settlement Alchemist",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.ALCHEMIST, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(alchemist, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register alchemist");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "medieval_factions:arcane_dust", 1L)
+                        && world.addSettlementStock(settlement.id(), "minecraft:glistering_melon_slice", 1L),
+                "Could not stock alchemist recipe inputs");
+        helper.assertTrue(MFWorkstationRules.supports("brew_healing_tonic", "minecraft:brewing_stand"),
+                "Alchemist healing tonic must require a brewing stand");
+        helper.assertTrue(!MFWorkstationRules.supports("brew_healing_tonic", "minecraft:crafting_table"),
+                "Alchemist recipe must reject a crafting table");
+        var alchemistOrder = advanced.startResidentWorkOrder(world, alchemist.id(), "minecraft:brewing_stand", 7L)
+                .orElseThrow(() -> new AssertionError("Alchemist could not start healing tonic recipe"));
+        helper.assertTrue(alchemistOrder.recipeId().equals("brew_healing_tonic"),
+                "Alchemist selected an unexpected recipe");
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, 8L);
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, 9L);
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("medieval_factions:healing_potion", 0L) == 1L,
+                "Completed alchemist order did not create exactly one functional healing potion");
         helper.succeed();
     }
 
