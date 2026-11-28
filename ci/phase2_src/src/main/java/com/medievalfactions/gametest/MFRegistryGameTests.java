@@ -338,6 +338,34 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:cooked_beef", 0L) == 1L,
                 "Completed butcher work order did not create exactly one cooked beef");
+        helper.assertTrue(MFWorkstationRules.supports("weave_white_carpet", "minecraft:loom"),
+                "Tailor carpet recipe must accept a loom");
+        helper.assertTrue(MFWorkstationRules.supports("craft_redstone_repeater", "minecraft:crafting_table"),
+                "Engineer repeater recipe must accept a crafting table");
+        helper.assertTrue(MFWorkstationRules.supports("craft_observer", "minecraft:crafting_table"),
+                "Engineer observer recipe must accept a crafting table");
+        helper.assertTrue(!MFWorkstationRules.supports("craft_observer", "minecraft:furnace"),
+                "Engineer observer recipe must reject a furnace");
+
+        MFCitizenState engineer = MFCitizenState.create(factionId, settlement.id(), "Settlement Engineer",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.ENGINEER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(engineer, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register engineer");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:redstone_torch", 2L)
+                        && world.addSettlementStock(settlement.id(), "minecraft:redstone", 1L)
+                        && world.addSettlementStock(settlement.id(), "minecraft:stone", 3L),
+                "Could not stock engineer recipe inputs");
+        advanced.advanceToDay(world, factions, 5L);
+        var engineerOrder = advanced.startResidentWorkOrder(world, engineer.id(), "minecraft:crafting_table", 5L)
+                .orElseThrow(() -> new AssertionError("Engineer could not start repeater recipe"));
+        helper.assertTrue(engineerOrder.recipeId().equals("craft_redstone_repeater"),
+                "Engineer selected an unexpected recipe");
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, 6L);
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:repeater", 0L) == 1L,
+                "Completed engineer order did not create exactly one repeater");
         helper.succeed();
     }
 
