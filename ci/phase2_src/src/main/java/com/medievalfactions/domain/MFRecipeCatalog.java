@@ -55,6 +55,18 @@ public final class MFRecipeCatalog {
         add(recipes, new Recipe("craft_observer", Profession.ENGINEER,
                 Map.of("minecraft:cobblestone", 6L, "minecraft:redstone", 2L, "minecraft:quartz", 1L),
                 Map.of("minecraft:observer", 1L), 2, 75L));
+        add(recipes, new Recipe("craft_bow", Profession.RANGED_ARTISAN,
+                Map.of("minecraft:stick", 3L, "minecraft:string", 3L),
+                Map.of("minecraft:bow", 1L), 2, 60L));
+        add(recipes, new Recipe("craft_minecart", Profession.CARTWRIGHT,
+                Map.of("minecraft:iron_ingot", 5L),
+                Map.of("minecraft:minecart", 1L), 2, 70L));
+        add(recipes, new Recipe("craft_oak_boat", Profession.SHIPWRIGHT,
+                Map.of("minecraft:oak_planks", 5L),
+                Map.of("minecraft:oak_boat", 1L), 1, 40L));
+        add(recipes, new Recipe("craft_clock", Profession.JEWELER,
+                Map.of("minecraft:gold_ingot", 4L, "minecraft:redstone", 1L),
+                Map.of("minecraft:clock", 1L), 2, 65L));
         add(recipes, new Recipe("brew_healing_tonic", Profession.ALCHEMIST,
                 Map.of("medieval_factions:arcane_dust", 1L, "minecraft:glistering_melon_slice", 1L),
                 Map.of("medieval_factions:healing_potion", 1L), 2, 70L));
