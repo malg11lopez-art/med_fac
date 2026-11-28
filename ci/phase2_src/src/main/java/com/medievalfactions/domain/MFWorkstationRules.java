@@ -16,7 +16,11 @@ public final class MFWorkstationRules {
             "forge_iron_sword", Set.of("minecraft:anvil", "minecraft:smithing_table",
                     "medieval_factions:blacksmith_anvil", "medieval_factions:forge_controller"),
             "craft_iron_chestplate", Set.of("minecraft:anvil", "minecraft:smithing_table",
-                    "medieval_factions:blacksmith_anvil", "medieval_factions:forge_controller")
+                    "medieval_factions:blacksmith_anvil", "medieval_factions:forge_controller"),
+            "cut_stone_bricks", Set.of("minecraft:stonecutter"),
+            "shape_stone_stairs", Set.of("minecraft:crafting_table", "minecraft:stonecutter"),
+            "smoke_beef", Set.of("minecraft:smoker", "minecraft:furnace"),
+            "craft_leather_horse_armor", Set.of("minecraft:crafting_table")
     );
 
     private MFWorkstationRules() {}
