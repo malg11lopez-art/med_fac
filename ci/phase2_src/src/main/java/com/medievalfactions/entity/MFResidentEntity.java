@@ -36,6 +36,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
     private long lastSocialInteractionTick = -1L;
     private long lastMealTick = -1L;
     private long lastResourceWorkTick = -1L;
+    private long lastProfessionWorkTick = -1L;
 
     public MFResidentEntity(EntityType<? extends MFResidentEntity> type, Level level) { super(type, level); }
 
@@ -176,7 +177,17 @@ public final class MFResidentEntity extends MFAnimatedMob {
                     }
                     workActionCompleted = started.isPresent();
                     if (!workActionCompleted) {
-                        workActionTrigger = performPhysicalResourceWork(serverLevel, worldData, citizen, target);
+                        if (citizen.profession() == Profession.FISHER) {
+                            workActionTrigger = performFishingWork(serverLevel, worldData, citizen, target);
+                        } else if (citizen.profession() == Profession.SHEPHERD) {
+                            workActionTrigger = performShepherdWork(serverLevel, worldData, citizen, target);
+                        } else if (citizen.profession() == Profession.RANCHER) {
+                            workActionTrigger = performRancherWork(serverLevel, worldData, citizen, target);
+                        } else if (citizen.profession() == Profession.APICULTURIST) {
+                            workActionTrigger = performApiaryWork(serverLevel, worldData, citizen, target);
+                        } else {
+                            workActionTrigger = performPhysicalResourceWork(serverLevel, worldData, citizen, target);
+                        }
                         workActionCompleted = workActionTrigger != null;
                     }
                 }
@@ -272,6 +283,152 @@ public final class MFResidentEntity extends MFAnimatedMob {
             }
         }
         return null;
+    }
+
+    /**
+     * Searches nearby loaded entities and shears one adult, unshorn sheep.
+     * Inventory credit is validated before changing the animal.
+     */
+    private String performShepherdWork(ServerLevel level, MFWorldSavedData worldData,
+                                       MFCitizenState citizen, BlockPos worksite) {
+        if (level == null || worldData == null || citizen == null || worksite == null
+                || citizen.profession() != Profession.SHEPHERD) return null;
+        long now = level.getGameTime();
+        if (lastProfessionWorkTick >= 0L && now >= lastProfessionWorkTick
+                && now - lastProfessionWorkTick < 200L) return null;
+        var sheep = level.getEntitiesOfClass(net.minecraft.world.entity.animal.Sheep.class,
+                new net.minecraft.world.phys.AABB(worksite).inflate(4.0D),
+                animal -> animal.isAlive() && !animal.isBaby() && animal.readyForShearing());
+        var target = sheep.stream().min(java.util.Comparator.comparingDouble(
+                animal -> animal.distanceToSqr(worksite.getX() + 0.5D, worksite.getY() + 0.5D, worksite.getZ() + 0.5D)))
+                .orElse(null);
+        if (target == null) return null;
+        String woolId = "minecraft:" + target.getColor().getName() + "_wool";
+        if (!worldData.creditResidentWool(citizen.settlementId(), citizen.id(), woolId, 1L, 10L)) return null;
+        // Keep the settlement inventory as the single authoritative wool destination.
+        target.setSheared(true);
+        level.playSound(null, target.blockPosition(), net.minecraft.sounds.SoundEvents.SHEEP_SHEAR,
+                net.minecraft.sounds.SoundSource.NEUTRAL, 0.7F, 0.95F + level.random.nextFloat() * 0.1F);
+        lastProfessionWorkTick = now;
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
+                target.getX(), target.getY() + 0.8D, target.getZ(), 4, 0.22D, 0.18D, 0.22D, 0.02D);
+        return "shear";
+    }
+
+    /**
+     * Milks one nearby adult cow. A real empty bucket must be present in settlement stock;
+     * the inventory transaction converts it into a milk bucket before the action is reported.
+     */
+    private String performRancherWork(ServerLevel level, MFWorldSavedData worldData,
+                                      MFCitizenState citizen, BlockPos worksite) {
+        if (level == null || worldData == null || citizen == null || worksite == null
+                || citizen.profession() != Profession.RANCHER) return null;
+        long now = level.getGameTime();
+        if (lastProfessionWorkTick >= 0L && now >= lastProfessionWorkTick
+                && now - lastProfessionWorkTick < 200L) return null;
+        var cows = level.getEntitiesOfClass(net.minecraft.world.entity.animal.Cow.class,
+                new net.minecraft.world.phys.AABB(worksite).inflate(4.0D),
+                animal -> animal.isAlive() && !animal.isBaby());
+        var target = cows.stream().min(java.util.Comparator.comparingDouble(
+                animal -> animal.distanceToSqr(worksite.getX() + 0.5D, worksite.getY() + 0.5D, worksite.getZ() + 0.5D)))
+                .orElse(null);
+        if (target == null || !worldData.creditResidentMilk(
+                citizen.settlementId(), citizen.id(), 1L, 10L)) return null;
+        lastProfessionWorkTick = now;
+        level.playSound(null, target.blockPosition(), net.minecraft.sounds.SoundEvents.BUCKET_FILL,
+                net.minecraft.sounds.SoundSource.NEUTRAL, 0.7F, 0.95F + level.random.nextFloat() * 0.1F);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                target.getX(), target.getY() + 1.0D, target.getZ(), 3, 0.2D, 0.18D, 0.2D, 0.01D);
+        return "harvest";
+    }
+
+    /**
+     * Collects honey from a full bee nest or hive. As in vanilla, a lit campfire directly below
+     * the hive is required so harvesting does not provoke its bees. A glass bottle is consumed.
+     */
+    private String performApiaryWork(ServerLevel level, MFWorldSavedData worldData,
+                                     MFCitizenState citizen, BlockPos worksite) {
+        if (level == null || worldData == null || citizen == null || worksite == null
+                || citizen.profession() != Profession.APICULTURIST) return null;
+        long now = level.getGameTime();
+        if (lastProfessionWorkTick >= 0L && now >= lastProfessionWorkTick
+                && now - lastProfessionWorkTick < 600L) return null;
+        for (int dy = 1; dy >= -1; dy--) {
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dz = -2; dz <= 2; dz++) {
+                    BlockPos hivePos = worksite.offset(dx, dy, dz);
+                    BlockPos smokePos = hivePos.below();
+                    if (!level.hasChunkAt(hivePos) || !level.hasChunkAt(smokePos)) continue;
+                    var hive = level.getBlockState(hivePos);
+                    if ((!hive.is(Blocks.BEEHIVE) && !hive.is(Blocks.BEE_NEST))
+                            || !hive.hasProperty(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL)
+                            || hive.getValue(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL) < 5) continue;
+                    var campfire = level.getBlockState(smokePos);
+                    if ((!campfire.is(Blocks.CAMPFIRE) && !campfire.is(Blocks.SOUL_CAMPFIRE))
+                            || !campfire.getValue(net.minecraft.world.level.block.CampfireBlock.LIT)) continue;
+                    var depleted = hive.setValue(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL, 0);
+                    if (!level.setBlock(hivePos, depleted, 3)) continue;
+                    if (!worldData.creditResidentHoneyBottle(citizen.settlementId(), citizen.id(), 1L, 10L)) {
+                        level.setBlock(hivePos, hive, 3);
+                        continue;
+                    }
+                    lastProfessionWorkTick = now;
+                    level.playSound(null, hivePos, net.minecraft.sounds.SoundEvents.BOTTLE_FILL,
+                            net.minecraft.sounds.SoundSource.BLOCKS, 0.7F,
+                            0.95F + level.random.nextFloat() * 0.1F);
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                            hivePos.getX() + 0.5D, hivePos.getY() + 0.6D, hivePos.getZ() + 0.5D,
+                            3, 0.18D, 0.15D, 0.18D, 0.01D);
+                    return "harvest";
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Performs one fishing cast at a real water worksite. The settlement receives a fish only
+     * after a loaded water source is found and the fisher-specific inventory transaction succeeds.
+     */
+    private String performFishingWork(ServerLevel level, MFWorldSavedData worldData,
+                                      MFCitizenState citizen, BlockPos worksite) {
+        if (level == null || worldData == null || citizen == null || worksite == null
+                || citizen.profession() != Profession.FISHER) return null;
+        long now = level.getGameTime();
+        if (lastProfessionWorkTick >= 0L && now >= lastProfessionWorkTick
+                && now - lastProfessionWorkTick < 100L) return null;
+        BlockPos water = null;
+        for (int dy = 1; dy >= -1 && water == null; dy--) {
+            for (int dx = -2; dx <= 2 && water == null; dx++) {
+                for (int dz = -2; dz <= 2; dz++) {
+                    BlockPos candidate = worksite.offset(dx, dy, dz);
+                    if (!level.hasChunkAt(candidate)) continue;
+                    var state = level.getBlockState(candidate);
+                    if (state.getFluidState().isSource()
+                            && (state.is(Blocks.WATER) || state.getFluidState().is(net.minecraft.tags.FluidTags.WATER))) {
+                        water = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+        if (water == null) return null;
+        // The first release uses cod as the common catch; later progression can unlock
+        // biome/depth-weighted tables without changing the transaction contract.
+        if (!worldData.creditResidentFish(citizen.settlementId(), citizen.id(),
+                "minecraft:cod", 1L, 10L)) return null;
+        // Fishing rods are reusable settlement tools: equip one for the visible cast but keep
+        // the authoritative tool in stock, unlike consumable catches.
+        setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
+                new net.minecraft.world.item.ItemStack(Items.FISHING_ROD));
+        lastProfessionWorkTick = now;
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SPLASH,
+                water.getX() + 0.5D, water.getY() + 0.65D, water.getZ() + 0.5D,
+                5, 0.22D, 0.12D, 0.22D, 0.04D);
+        level.playSound(null, water, net.minecraft.sounds.SoundEvents.FISHING_BOBBER_RETRIEVE,
+                net.minecraft.sounds.SoundSource.BLOCKS, 0.5F,
+                0.9F + level.random.nextFloat() * 0.2F);
+        return "fish_cast";
     }
 
     private static boolean plantCropOnFarmland(ServerLevel level, MFWorldSavedData worldData,
@@ -410,6 +567,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
         tag.putLong("mf_last_social_tick", lastSocialInteractionTick);
         tag.putLong("mf_last_meal_tick", lastMealTick);
         tag.putLong("mf_last_resource_work_tick", lastResourceWorkTick);
+        tag.putLong("mf_last_profession_work_tick", lastProfessionWorkTick);
     }
 
     @Override public void readAdditionalSaveData(CompoundTag tag) {
@@ -430,5 +588,7 @@ public final class MFResidentEntity extends MFAnimatedMob {
                 ? tag.getLong("mf_last_meal_tick") : -1L;
         lastResourceWorkTick = tag.contains("mf_last_resource_work_tick", net.minecraft.nbt.Tag.TAG_LONG)
                 ? tag.getLong("mf_last_resource_work_tick") : -1L;
+        lastProfessionWorkTick = tag.contains("mf_last_profession_work_tick", net.minecraft.nbt.Tag.TAG_LONG)
+                ? tag.getLong("mf_last_profession_work_tick") : -1L;
     }
 }

@@ -6,6 +6,7 @@ import com.medievalfactions.data.MFFactionSavedData;
 import com.medievalfactions.data.MFWorldSavedData;
 import com.medievalfactions.domain.MFCitizenSimulation;
 import com.medievalfactions.domain.MFWorkstationRules;
+import com.medievalfactions.domain.MFRecipeCatalog;
 import com.medievalfactions.domain.MFAdvancedSystems;
 import com.medievalfactions.domain.MFAdventureSystems;
 import com.medievalfactions.domain.MFCityPlanner;
@@ -311,6 +312,140 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:oak_planks", 0L) == 4L,
                 "Completed physical-station job did not create exactly four planks");
+        helper.assertTrue(MFWorkstationRules.supports("cut_stone_bricks", "minecraft:stonecutter"),
+                "Stonecutter recipe must require a real stonecutter");
+        helper.assertTrue(MFWorkstationRules.supports("smoke_beef", "minecraft:smoker"),
+                "Butcher recipe must accept a smoker");
+        helper.assertTrue(!MFWorkstationRules.supports("smoke_beef", "minecraft:crafting_table"),
+                "Butcher recipe must reject a crafting table");
+
+        MFCitizenState butcher = MFCitizenState.create(factionId, settlement.id(), "Settlement Butcher",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.BUTCHER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(butcher, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register butcher");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:raw_beef", 1L)
+                        && world.addSettlementStock(settlement.id(), "minecraft:coal", 1L),
+                "Could not stock butcher recipe inputs");
+        advanced.advanceToDay(world, factions, 3L);
+        var butcherOrder = advanced.startResidentWorkOrder(world, butcher.id(), "minecraft:smoker", 3L)
+                .orElseThrow(() -> new AssertionError("Butcher could not start at a smoker"));
+        helper.assertTrue(butcherOrder.recipeId().equals("smoke_beef")
+                        && world.settlement(settlement.id()).orElseThrow().inventory()
+                                .getOrDefault("minecraft:raw_beef", 0L) == 0L,
+                "Butcher recipe did not reserve its real ingredients at the smoker");
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, 4L);
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:cooked_beef", 0L) == 1L,
+                "Completed butcher work order did not create exactly one cooked beef");
+        helper.assertTrue(MFWorkstationRules.supports("weave_white_carpet", "minecraft:loom"),
+                "Tailor carpet recipe must accept a loom");
+        helper.assertTrue(MFWorkstationRules.supports("craft_redstone_repeater", "minecraft:crafting_table"),
+                "Engineer repeater recipe must accept a crafting table");
+        helper.assertTrue(MFWorkstationRules.supports("craft_observer", "minecraft:crafting_table"),
+                "Engineer observer recipe must accept a crafting table");
+        helper.assertTrue(!MFWorkstationRules.supports("craft_observer", "minecraft:furnace"),
+                "Engineer observer recipe must reject a furnace");
+
+        MFCitizenState engineer = MFCitizenState.create(factionId, settlement.id(), "Settlement Engineer",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.ENGINEER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(engineer, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register engineer");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:redstone_torch", 2L)
+                        && world.addSettlementStock(settlement.id(), "minecraft:redstone", 1L)
+                        && world.addSettlementStock(settlement.id(), "minecraft:stone", 3L),
+                "Could not stock engineer recipe inputs");
+        advanced.advanceToDay(world, factions, 5L);
+        var engineerOrder = advanced.startResidentWorkOrder(world, engineer.id(), "minecraft:crafting_table", 5L)
+                .orElseThrow(() -> new AssertionError("Engineer could not start repeater recipe"));
+        helper.assertTrue(engineerOrder.recipeId().equals("craft_redstone_repeater"),
+                "Engineer selected an unexpected recipe");
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, 6L);
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:repeater", 0L) == 1L,
+                "Completed engineer order did not create exactly one repeater");
+
+        MFCitizenState tailor = MFCitizenState.create(factionId, settlement.id(), "Settlement Tailor",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.TAILOR, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(tailor, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register tailor");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:white_wool", 2L),
+                "Could not stock tailor recipe inputs");
+        // Work is scheduled by the resident's daily routine; wait for an actual WORK day
+        // instead of assuming every profession works on the same calendar day.
+        long tailorWorkDay = 6L;
+        advanced.advanceToDay(world, factions, tailorWorkDay);
+        var tailorDirective = advanced.record("npc_directives", tailor.id(),
+                MFAdvancedSystems.NpcDirective.class).orElse(null);
+        while ((tailorDirective == null || (tailorDirective.intent() != MFAdvancedSystems.NpcIntent.WORK
+                && tailorDirective.intent() != MFAdvancedSystems.NpcIntent.CONTINUE_WORK))
+                && tailorWorkDay < 20L) {
+            advanced.advanceToDay(world, factions, ++tailorWorkDay);
+            tailorDirective = advanced.record("npc_directives", tailor.id(),
+                    MFAdvancedSystems.NpcDirective.class).orElse(null);
+        }
+        helper.assertTrue(tailorDirective != null && (tailorDirective.intent() == MFAdvancedSystems.NpcIntent.WORK
+                        || tailorDirective.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK),
+                "Tailor was never assigned a work day by the autonomous schedule");
+        var tailorOrder = advanced.startResidentWorkOrder(world, tailor.id(), "minecraft:loom", tailorWorkDay)
+                .orElseThrow(() -> new AssertionError("Tailor could not start carpet recipe at loom"));
+        helper.assertTrue(tailorOrder.recipeId().equals("weave_white_carpet"),
+                "Tailor selected an unexpected recipe");
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, 7L);
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:white_carpet", 0L) == 3L,
+                "Completed tailor order did not create exactly three carpets");
+
+        // Keep the recipe test independent from the town's housing cap: six workers
+        // must not be silently admitted to a settlement whose default capacity is lower.
+        var alchemistSettlement = world.createSettlement(factionId, "Alchemist Quarter")
+                .orElseThrow(() -> new AssertionError("Could not create alchemist worksite"));
+        helper.assertTrue(world.addSettlementFood(alchemistSettlement.id(), 20L),
+                "Could not provide alchemist worksite food");
+        helper.assertTrue(world.replaceSettlement(world.settlement(alchemistSettlement.id()).orElseThrow()
+                .withSecurityAndInfrastructure(80, 50)), "Could not secure alchemist worksite");
+        MFCitizenState alchemist = MFCitizenState.create(factionId, alchemistSettlement.id(), "Settlement Alchemist",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.ALCHEMIST, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(alchemist, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register alchemist in its own staffed worksite");
+        helper.assertTrue(world.addSettlementStock(alchemistSettlement.id(), "medieval_factions:arcane_dust", 1L)
+                        && world.addSettlementStock(alchemistSettlement.id(), "minecraft:glistering_melon_slice", 1L),
+                "Could not stock alchemist recipe inputs");
+        long alchemistWorkDay = tailorWorkDay + 2L;
+        advanced.advanceToDay(world, factions, alchemistWorkDay);
+        var alchemistDirective = advanced.record("npc_directives", alchemist.id(),
+                MFAdvancedSystems.NpcDirective.class).orElse(null);
+        while ((alchemistDirective == null || (alchemistDirective.intent() != MFAdvancedSystems.NpcIntent.WORK
+                && alchemistDirective.intent() != MFAdvancedSystems.NpcIntent.CONTINUE_WORK))
+                && alchemistWorkDay < tailorWorkDay + 16L) {
+            advanced.advanceToDay(world, factions, ++alchemistWorkDay);
+            alchemistDirective = advanced.record("npc_directives", alchemist.id(),
+                    MFAdvancedSystems.NpcDirective.class).orElse(null);
+        }
+        helper.assertTrue(alchemistDirective != null && (alchemistDirective.intent() == MFAdvancedSystems.NpcIntent.WORK
+                        || alchemistDirective.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK),
+                "Alchemist was never assigned a work day by the autonomous schedule");
+        helper.assertTrue(MFWorkstationRules.supports("brew_healing_tonic", "minecraft:brewing_stand"),
+                "Alchemist healing tonic must require a brewing stand");
+        helper.assertTrue(!MFWorkstationRules.supports("brew_healing_tonic", "minecraft:crafting_table"),
+                "Alchemist recipe must reject a crafting table");
+        var alchemistOrder = advanced.startResidentWorkOrder(world, alchemist.id(), "minecraft:brewing_stand", alchemistWorkDay)
+                .orElseThrow(() -> new AssertionError("Alchemist could not start healing tonic recipe"));
+        helper.assertTrue(alchemistOrder.recipeId().equals("brew_healing_tonic"),
+                "Alchemist selected an unexpected recipe");
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, alchemistWorkDay + 1L);
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, alchemistWorkDay + 2L);
+        helper.assertTrue(world.settlement(alchemistSettlement.id()).orElseThrow().inventory()
+                        .getOrDefault("medieval_factions:healing_potion", 0L) == 1L,
+                "Completed alchemist order did not create exactly one functional healing potion");
         helper.succeed();
     }
 
@@ -773,6 +908,250 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", batch = "zzResidentAnimalWork", timeoutTicks = 80)
+    public static void shepherdShearsNearbySheepAndStoresWool(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Shepherd Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create shepherd test faction"));
+        var settlement = world.createSettlement(faction.id(), "Sheep Pasture")
+                .orElseThrow(() -> new AssertionError("Could not create shepherd test settlement"));
+        MFCitizenState shepherd = MFCitizenState.create(faction.id(), settlement.id(), "Test Shepherd",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.SHEPHERD, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(shepherd, faction.primaryRace()), "Could not register shepherd");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        var sheep = net.minecraft.world.entity.EntityType.SHEEP.create(level);
+        helper.assertTrue(sheep != null, "Could not create test sheep");
+        if (sheep == null) return;
+        sheep.setPos(standing.getX() + 1.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(sheep), "Could not add test sheep");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(shepherd.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save shepherd schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not create shepherd resident");
+        if (resident == null) return;
+        resident.bindCitizen(shepherd.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add shepherd resident");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(sheep.isSheared(), "Shepherd did not shear the nearby sheep");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:white_wool", 0L) == 1L,
+                "Sheared wool was not credited to the settlement store");
+        helper.assertTrue(world.citizen(shepherd.id()).map(citizen -> citizen.professionXp() == 10L).orElse(false),
+                "Successful shearing did not award exactly ten profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:white_wool", 0L) == 1L,
+                "Repeated resident ticks duplicated the same fleece");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "zzzzResidentApiaryWork", timeoutTicks = 80)
+    public static void apiculturistHarvestsHoneyWithSmokeAndStoresBottle(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Apiary Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create apiary test faction"));
+        var settlement = world.createSettlement(faction.id(), "Honey Yard")
+                .orElseThrow(() -> new AssertionError("Could not create apiary test settlement"));
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:glass_bottle", 1L),
+                "Could not stock one glass bottle for the apiculturist");
+        MFCitizenState apiculturist = MFCitizenState.create(faction.id(), settlement.id(), "Test Apiculturist",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.APICULTURIST, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(apiculturist, faction.primaryRace()),
+                "Could not register apiculturist");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        BlockPos hive = standing.east();
+        BlockPos smoke = hive.below();
+        helper.assertTrue(level.setBlock(smoke, Blocks.CAMPFIRE.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.CampfireBlock.LIT, true), 3),
+                "Could not place lit smoke source below bee hive");
+        helper.assertTrue(level.setBlock(hive, Blocks.BEEHIVE.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL, 5), 3),
+                "Could not place a full bee hive");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(apiculturist.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save apiculturist schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not create apiculturist resident");
+        if (resident == null) return;
+        resident.bindCitizen(apiculturist.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add apiculturist resident");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(hive).is(Blocks.BEEHIVE)
+                        && level.getBlockState(hive).getValue(
+                                net.minecraft.world.level.block.BeehiveBlock.HONEY_LEVEL) == 0,
+                "Apiculturist did not reset the full hive after harvesting");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:glass_bottle", 0L) == 0L
+                        && world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:honey_bottle", 0L) == 1L,
+                "Apiculturist did not exchange one glass bottle for one honey bottle");
+        helper.assertTrue(world.citizen(apiculturist.id()).map(c -> c.professionXp() == 10L).orElse(false),
+                "Successful honey collection did not award ten profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:honey_bottle", 0L) == 1L,
+                "Repeated resident ticks duplicated the honey bottle");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "zzzResidentRancherWork", timeoutTicks = 80)
+    public static void rancherMilksNearbyCowUsingSettlementBucket(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Rancher Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create rancher test faction"));
+        var settlement = world.createSettlement(faction.id(), "Dairy Farm")
+                .orElseThrow(() -> new AssertionError("Could not create rancher test settlement"));
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:bucket", 1L),
+                "Could not stock one empty bucket for the rancher");
+        MFCitizenState rancher = MFCitizenState.create(faction.id(), settlement.id(), "Test Rancher",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.RANCHER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(rancher, faction.primaryRace()), "Could not register rancher");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        var cow = EntityType.COW.create(level);
+        helper.assertTrue(cow != null, "Could not create test cow");
+        if (cow == null) return;
+        cow.setPos(standing.getX() + 1.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(cow), "Could not add test cow");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(rancher.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save rancher schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not create rancher resident");
+        if (resident == null) return;
+        resident.bindCitizen(rancher.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add rancher resident");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:bucket", 0L) == 0L
+                        && world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:milk_bucket", 0L) == 1L,
+                "Rancher did not exchange the stocked empty bucket for one milk bucket");
+        helper.assertTrue(world.citizen(rancher.id()).map(c -> c.professionXp() == 10L).orElse(false),
+                "Successful milking did not award exactly ten profession XP");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:milk_bucket", 0L) == 1L,
+                "Repeated resident ticks duplicated the same milk collection");
+
+        MFCitizenState nonRancher = MFCitizenState.create(faction.id(), settlement.id(), "Test Farmer",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FARMER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(nonRancher, faction.primaryRace()),
+                "Could not register non-rancher transaction guard");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:bucket", 1L),
+                "Could not stock guard-test bucket");
+        helper.assertTrue(!world.creditResidentMilk(settlement.id(), nonRancher.id(), 1L, 10L),
+                "A non-rancher was allowed to create milk through the rancher transaction");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:bucket", 0L) == 1L,
+                "Rejected milking transaction consumed the empty bucket");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "zResidentProfessionActions", timeoutTicks = 80)
+    public static void fisherCatchesFishAtRealWaterWorksite(GameTestHelper helper) {
+        var level = helper.getLevel();
+        var server = level.getServer();
+        MFFactionSavedData factions = MFFactionSavedData.get(server);
+        MFWorldSavedData world = MFWorldSavedData.get(server);
+        MFAdvancedSavedData advanced = MFAdvancedSavedData.get(server);
+        var faction = factions.createFaction("Fisher Test", UUID.randomUUID(), MFGameCatalog.RaceFamily.HUMANS)
+                .orElseThrow(() -> new AssertionError("Could not create fisher test faction"));
+        var settlement = world.createSettlement(faction.id(), "Harbor Village")
+                .orElseThrow(() -> new AssertionError("Could not create fisher test settlement"));
+        MFCitizenState fisher = MFCitizenState.create(faction.id(), settlement.id(), "Test Fisher",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FISHER, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(fisher, faction.primaryRace()), "Could not register fisher");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:fishing_rod", 1L),
+                "Could not stock reusable fishing rod");
+        BlockPos standing = helper.absolutePos(new BlockPos(2, 3, 2));
+        BlockPos water = standing.east();
+        helper.assertTrue(level.setBlock(water, Blocks.WATER.defaultBlockState(), 3),
+                "Could not place real water source for fishing");
+        var schedule = new MFCitizenSimulation.CitizenSchedule(fisher.id(), List.of(
+                new MFCitizenSimulation.ScheduleEntry(0, MFCitizenSimulation.Activity.WORK,
+                        new MFCitizenSimulation.Waypoint(level.dimension().location().toString(),
+                                standing.getX(), standing.getY(), standing.getZ()))));
+        helper.assertTrue(advanced.saveCitizenSchedule(world, schedule), "Could not save fisher schedule");
+        advanced.advanceToDay(world, factions, 0L);
+        advanced.advanceToDay(world, factions, 1L);
+        advanced.updateScheduledNpcPlans(world, 0);
+        MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
+        helper.assertTrue(resident != null, "Could not construct fisher entity");
+        if (resident == null) return;
+        resident.bindCitizen(fisher.id());
+        resident.setPos(standing.getX() + 0.5D, standing.getY(), standing.getZ() + 0.5D);
+        helper.assertTrue(level.addFreshEntity(resident), "Could not add fisher to test world");
+        for (int i = 0; i < 10; i++) resident.tick();
+        helper.assertTrue(level.getBlockState(water).is(Blocks.WATER),
+                "Fishing must not consume or replace the water source");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:cod", 0L) == 1L,
+                "Fisher did not credit one cod to settlement inventory");
+        helper.assertTrue(world.citizen(fisher.id()).map(c -> c.professionXp() == 10L).orElse(false),
+                "Successful fishing did not award exactly ten profession XP");
+        helper.assertTrue(resident.getMainHandItem().is(net.minecraft.world.item.Items.FISHING_ROD),
+                "Fisher must visibly equip the reusable settlement fishing rod");
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:fishing_rod", 0L) == 1L,
+                "Reusable fishing rod must remain in settlement stock after work");
+        for (int i = 0; i < 20; i++) resident.tick();
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:cod", 0L) == 1L,
+                "Repeated resident ticks duplicated the fish catch");
+
+        var untooledSettlement = world.createSettlement(faction.id(), "Untooled Harbor")
+                .orElseThrow(() -> new AssertionError("Could not create untooled fisher settlement"));
+        MFCitizenState untooledFisher = MFCitizenState.create(faction.id(), untooledSettlement.id(),
+                "Unequipped Fisher", MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.FISHER,
+                0L, 20, MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(untooledFisher, faction.primaryRace()),
+                "Could not register untooled fisher");
+        helper.assertTrue(!world.creditResidentFish(untooledSettlement.id(), untooledFisher.id(),
+                        "minecraft:cod", 1L, 10L),
+                "Fisher without a stocked fishing rod must not create fish");
+        helper.assertTrue(world.settlement(untooledSettlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:cod", 0L) == 0L
+                        && world.citizen(untooledFisher.id()).map(c -> c.professionXp() == 0L).orElse(false),
+                "Rejected untooled fishing must not credit output or XP");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "residentResourceActions", timeoutTicks = 80)
     public static void lumberjackPhysicallyFellsLogAndCreditsSettlement(GameTestHelper helper) {
         var level = helper.getLevel();
@@ -865,7 +1244,7 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", timeoutTicks = 80)
+    @GameTest(template = "empty", batch = "residentHarvesting", timeoutTicks = 80)
     public static void residentFarmerHarvestsMatureCropIntoSettlementStock(GameTestHelper helper) {
         var level = helper.getLevel();
         var server = level.getServer();
@@ -904,9 +1283,17 @@ public final class MFRegistryGameTests {
         helper.assertTrue(advanced.saveCitizenSchedule(world, schedule),
                 "Could not save farmer work schedule");
         // Initialize the daily plan using the same progression as the server tick.
+        // Exercise the same two authoritative planning layers used by the server.
+        // The daily NPC planner assigns WORK; the schedule planner supplies the
+        // physical destination used by the resident entity when it performs planting.
         advanced.advanceToDay(world, factions, 0L);
-        advanced.advanceToDay(world, factions, 1L);
+        advanced.planNpcPopulation(world, 0L);
         advanced.updateScheduledNpcPlans(world, 0);
+        helper.assertTrue(advanced.record("npc_directives", farmer.id(),
+                        MFAdvancedSystems.NpcDirective.class)
+                        .map(directive -> directive.intent() == MFAdvancedSystems.NpcIntent.WORK
+                                || directive.intent() == MFAdvancedSystems.NpcIntent.CONTINUE_WORK).orElse(false),
+                "Daily simulation did not authorize the farmer to work");
         helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
                         MFCitizenSimulation.CitizenPlan.class)
                         .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK).orElse(false),
@@ -922,8 +1309,10 @@ public final class MFRegistryGameTests {
         for (int i = 0; i < 10; i++) resident.tick();
         helper.assertTrue(resident.visualRole() == 1,
                 "Farmer profession was not synchronized to the resident renderer");
-        helper.assertTrue(level.getBlockState(crop).getValue(CropBlock.AGE) == 0,
-                "Mature crop was not replanted to age zero after harvest");
+        helper.assertTrue(level.getBlockState(crop).is(Blocks.CARROTS)
+                        && level.getBlockState(crop).getValue(CropBlock.AGE) == 0,
+                "Mature crop was not replanted to age zero after harvest; actual block: "
+                        + level.getBlockState(crop));
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:carrot", 0L) == 2L,
                 "Harvest output was not credited to settlement inventory");
@@ -963,8 +1352,10 @@ public final class MFRegistryGameTests {
         BlockPos farmland = helper.absolutePos(new BlockPos(2, 3, 2));
         BlockPos crop = farmland.above();
         BlockPos standing = crop.above();
-        helper.assertTrue(level.setBlock(farmland, Blocks.FARMLAND.defaultBlockState(), 3),
-                "Could not place planter farmland");
+        helper.assertTrue(level.setBlock(farmland,
+                        Blocks.FARMLAND.defaultBlockState().setValue(
+                                net.minecraft.world.level.block.FarmBlock.MOISTURE, 7), 3),
+                "Could not place hydrated planter farmland");
         helper.assertTrue(level.getBlockState(crop).isAir(), "Planter crop space must start empty");
         String dimension = level.dimension().location().toString();
         var schedule = new MFCitizenSimulation.CitizenSchedule(farmer.id(), List.of(
@@ -978,8 +1369,16 @@ public final class MFRegistryGameTests {
         advanced.updateScheduledNpcPlans(world, 0);
         helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
                         MFCitizenSimulation.CitizenPlan.class)
-                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK).orElse(false),
-                "Daily scheduler did not create planter work plan");
+                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK
+                                && plan.destination().dimension().equals(dimension)
+                                && plan.destination().x() == standing.getX()
+                                && plan.destination().y() == standing.getY()
+                                && plan.destination().z() == standing.getZ()).orElse(false),
+                "Daily scheduler did not preserve the farmer's physical planting waypoint");
+        helper.assertTrue(level.getBlockState(farmland).is(Blocks.FARMLAND)
+                        && level.getBlockState(crop).isAir()
+                        && Blocks.WHEAT.defaultBlockState().canSurvive(level, crop),
+                "Planting site must be loaded, empty and valid for wheat");
         MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
         helper.assertTrue(resident != null, "Could not construct planter resident entity");
         if (resident == null) return;
@@ -1002,6 +1401,30 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void everyProfessionRecipeHasACompatiblePhysicalWorkstation(GameTestHelper helper) {
+        var recipes = MFRecipeCatalog.all();
+        helper.assertTrue(recipes.size() == 19, "Expected 19 production recipes, found " + recipes.size());
+        for (var recipe : recipes) {
+            var stations = MFWorkstationRules.acceptedStations(recipe.id());
+            helper.assertTrue(!stations.isEmpty(), "Recipe has no physical workstation: " + recipe.id());
+            for (String station : stations) {
+                helper.assertTrue(MFWorkstationRules.supports(recipe.id(), station),
+                        "Workstation reverse lookup rejected " + station + " for " + recipe.id());
+            }
+            helper.assertTrue(!recipe.inputs().isEmpty() && !recipe.outputs().isEmpty(),
+                    "Recipe must consume and produce real inventory items: " + recipe.id());
+        }
+        helper.assertTrue(MFRecipeCatalog.recipe("craft_bow").map(r -> r.profession() == MFGameCatalog.Profession.RANGED_ARTISAN).orElse(false),
+                "Bow production must belong to the ranged artisan");
+        helper.assertTrue(MFRecipeCatalog.recipe("craft_minecart").map(r -> r.profession() == MFGameCatalog.Profession.CARTWRIGHT).orElse(false),
+                "Minecart production must belong to the cartwright");
+        helper.assertTrue(MFRecipeCatalog.recipe("craft_oak_boat").map(r -> r.profession() == MFGameCatalog.Profession.SHIPWRIGHT).orElse(false),
+                "Boat production must belong to the shipwright");
+        helper.assertTrue(MFRecipeCatalog.recipe("craft_clock").map(r -> r.profession() == MFGameCatalog.Profession.JEWELER).orElse(false),
+                "Clock production must belong to the jeweler");
+        helper.succeed();
+    }
     private static boolean rejectsSchema(Runnable loader) {
         try {
             loader.run();
