@@ -55,6 +55,12 @@ public final class MFRecipeCatalog {
         add(recipes, new Recipe("craft_observer", Profession.ENGINEER,
                 Map.of("minecraft:cobblestone", 6L, "minecraft:redstone", 2L, "minecraft:quartz", 1L),
                 Map.of("minecraft:observer", 1L), 2, 75L));
+        add(recipes, new Recipe("brew_healing_tonic", Profession.ALCHEMIST,
+                Map.of("medieval_factions:arcane_dust", 1L, "minecraft:glistering_melon_slice", 1L),
+                Map.of("medieval_factions:healing_potion", 1L), 2, 70L));
+        add(recipes, new Recipe("brew_fire_resistance_tonic", Profession.ALCHEMIST,
+                Map.of("medieval_factions:arcane_dust", 1L, "medieval_factions:sunsteel_fragment", 1L),
+                Map.of("medieval_factions:fire_potion", 1L), 3, 95L));
         RECIPES = Map.copyOf(recipes);
     }
 
