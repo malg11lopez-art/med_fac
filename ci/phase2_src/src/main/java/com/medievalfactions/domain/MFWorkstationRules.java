@@ -23,7 +23,9 @@ public final class MFWorkstationRules {
             "craft_leather_horse_armor", Set.of("minecraft:crafting_table"),
             "weave_white_carpet", Set.of("minecraft:crafting_table", "minecraft:loom"),
             "craft_redstone_repeater", Set.of("minecraft:crafting_table"),
-            "craft_observer", Set.of("minecraft:crafting_table")
+            "craft_observer", Set.of("minecraft:crafting_table"),
+            "brew_healing_tonic", Set.of("minecraft:brewing_stand", "medieval_factions:arcane_workbench"),
+            "brew_fire_resistance_tonic", Set.of("minecraft:brewing_stand", "medieval_factions:arcane_workbench")
     );
 
     private MFWorkstationRules() {}
