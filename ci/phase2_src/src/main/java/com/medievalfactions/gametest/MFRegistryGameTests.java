@@ -400,13 +400,21 @@ public final class MFRegistryGameTests {
                         .getOrDefault("minecraft:white_carpet", 0L) == 3L,
                 "Completed tailor order did not create exactly three carpets");
 
-        MFCitizenState alchemist = MFCitizenState.create(factionId, settlement.id(), "Settlement Alchemist",
+        // Keep the recipe test independent from the town's housing cap: six workers
+        // must not be silently admitted to a settlement whose default capacity is lower.
+        var alchemistSettlement = world.createSettlement(factionId, "Alchemist Quarter")
+                .orElseThrow(() -> new AssertionError("Could not create alchemist worksite"));
+        helper.assertTrue(world.addSettlementFood(alchemistSettlement.id(), 20L),
+                "Could not provide alchemist worksite food");
+        helper.assertTrue(world.replaceSettlement(world.settlement(alchemistSettlement.id()).orElseThrow()
+                .withSecurityAndInfrastructure(80, 50)), "Could not secure alchemist worksite");
+        MFCitizenState alchemist = MFCitizenState.create(factionId, alchemistSettlement.id(), "Settlement Alchemist",
                 MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.ALCHEMIST, 0L, 20,
                 MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
         helper.assertTrue(world.addCitizen(alchemist, MFGameCatalog.RaceFamily.HUMANS),
-                "Could not register alchemist");
-        helper.assertTrue(world.addSettlementStock(settlement.id(), "medieval_factions:arcane_dust", 1L)
-                        && world.addSettlementStock(settlement.id(), "minecraft:glistering_melon_slice", 1L),
+                "Could not register alchemist in its own staffed worksite");
+        helper.assertTrue(world.addSettlementStock(alchemistSettlement.id(), "medieval_factions:arcane_dust", 1L)
+                        && world.addSettlementStock(alchemistSettlement.id(), "minecraft:glistering_melon_slice", 1L),
                 "Could not stock alchemist recipe inputs");
         long alchemistWorkDay = tailorWorkDay + 2L;
         advanced.advanceToDay(world, factions, alchemistWorkDay);
@@ -434,7 +442,7 @@ public final class MFRegistryGameTests {
         advanced.advanceToDay(world, factions, alchemistWorkDay + 1L);
         world.advanceOneDay();
         advanced.advanceToDay(world, factions, alchemistWorkDay + 2L);
-        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+        helper.assertTrue(world.settlement(alchemistSettlement.id()).orElseThrow().inventory()
                         .getOrDefault("medieval_factions:healing_potion", 0L) == 1L,
                 "Completed alchemist order did not create exactly one functional healing potion");
         helper.succeed();
@@ -1335,8 +1343,10 @@ public final class MFRegistryGameTests {
         BlockPos farmland = helper.absolutePos(new BlockPos(2, 3, 2));
         BlockPos crop = farmland.above();
         BlockPos standing = crop.above();
-        helper.assertTrue(level.setBlock(farmland, Blocks.FARMLAND.defaultBlockState(), 3),
-                "Could not place planter farmland");
+        helper.assertTrue(level.setBlock(farmland,
+                        Blocks.FARMLAND.defaultBlockState().setValue(
+                                net.minecraft.world.level.block.FarmBlock.MOISTURE, 7), 3),
+                "Could not place hydrated planter farmland");
         helper.assertTrue(level.getBlockState(crop).isAir(), "Planter crop space must start empty");
         String dimension = level.dimension().location().toString();
         var schedule = new MFCitizenSimulation.CitizenSchedule(farmer.id(), List.of(
@@ -1350,8 +1360,16 @@ public final class MFRegistryGameTests {
         advanced.updateScheduledNpcPlans(world, 0);
         helper.assertTrue(advanced.record("citizen_plans", farmer.id(),
                         MFCitizenSimulation.CitizenPlan.class)
-                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK).orElse(false),
-                "Daily scheduler did not create planter work plan");
+                        .map(plan -> plan.activity() == MFCitizenSimulation.Activity.WORK
+                                && plan.destination().dimension().equals(dimension)
+                                && plan.destination().x() == standing.getX()
+                                && plan.destination().y() == standing.getY()
+                                && plan.destination().z() == standing.getZ()).orElse(false),
+                "Daily scheduler did not preserve the farmer's physical planting waypoint");
+        helper.assertTrue(level.getBlockState(farmland).is(Blocks.FARMLAND)
+                        && level.getBlockState(crop).isAir()
+                        && Blocks.WHEAT.defaultBlockState().canSurvive(level, crop),
+                "Planting site must be loaded, empty and valid for wheat");
         MFResidentEntity resident = MFEntities.RESIDENT.get().create(level);
         helper.assertTrue(resident != null, "Could not construct planter resident entity");
         if (resident == null) return;
