@@ -6,6 +6,7 @@ import com.medievalfactions.data.MFFactionSavedData;
 import com.medievalfactions.data.MFWorldSavedData;
 import com.medievalfactions.domain.MFCitizenSimulation;
 import com.medievalfactions.domain.MFWorkstationRules;
+import com.medievalfactions.domain.MFRecipeCatalog;
 import com.medievalfactions.domain.MFAdvancedSystems;
 import com.medievalfactions.domain.MFAdventureSystems;
 import com.medievalfactions.domain.MFCityPlanner;
@@ -1400,6 +1401,30 @@ public final class MFRegistryGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty", timeoutTicks = 20)
+    public static void everyProfessionRecipeHasACompatiblePhysicalWorkstation(GameTestHelper helper) {
+        var recipes = MFRecipeCatalog.all();
+        helper.assertTrue(recipes.size() == 19, "Expected 19 production recipes, found " + recipes.size());
+        for (var recipe : recipes) {
+            var stations = MFWorkstationRules.acceptedStations(recipe.id());
+            helper.assertTrue(!stations.isEmpty(), "Recipe has no physical workstation: " + recipe.id());
+            for (String station : stations) {
+                helper.assertTrue(MFWorkstationRules.supports(recipe.id(), station),
+                        "Workstation reverse lookup rejected " + station + " for " + recipe.id());
+            }
+            helper.assertTrue(!recipe.inputs().isEmpty() && !recipe.outputs().isEmpty(),
+                    "Recipe must consume and produce real inventory items: " + recipe.id());
+        }
+        helper.assertTrue(MFRecipeCatalog.recipe("craft_bow").map(r -> r.profession() == MFGameCatalog.Profession.RANGED_ARTISAN).orElse(false),
+                "Bow production must belong to the ranged artisan");
+        helper.assertTrue(MFRecipeCatalog.recipe("craft_minecart").map(r -> r.profession() == MFGameCatalog.Profession.CARTWRIGHT).orElse(false),
+                "Minecart production must belong to the cartwright");
+        helper.assertTrue(MFRecipeCatalog.recipe("craft_oak_boat").map(r -> r.profession() == MFGameCatalog.Profession.SHIPWRIGHT).orElse(false),
+                "Boat production must belong to the shipwright");
+        helper.assertTrue(MFRecipeCatalog.recipe("craft_clock").map(r -> r.profession() == MFGameCatalog.Profession.JEWELER).orElse(false),
+                "Clock production must belong to the jeweler");
+        helper.succeed();
+    }
     private static boolean rejectsSchema(Runnable loader) {
         try {
             loader.run();
