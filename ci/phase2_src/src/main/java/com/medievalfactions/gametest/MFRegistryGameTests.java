@@ -366,6 +366,23 @@ public final class MFRegistryGameTests {
         helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
                         .getOrDefault("minecraft:repeater", 0L) == 1L,
                 "Completed engineer order did not create exactly one repeater");
+
+        MFCitizenState tailor = MFCitizenState.create(factionId, settlement.id(), "Settlement Tailor",
+                MFGameCatalog.RaceFamily.HUMANS, MFGameCatalog.Profession.TAILOR, 0L, 20,
+                MFRaceBiology.adultAgeDays(MFGameCatalog.RaceFamily.HUMANS));
+        helper.assertTrue(world.addCitizen(tailor, MFGameCatalog.RaceFamily.HUMANS),
+                "Could not register tailor");
+        helper.assertTrue(world.addSettlementStock(settlement.id(), "minecraft:white_wool", 2L),
+                "Could not stock tailor recipe inputs");
+        var tailorOrder = advanced.startResidentWorkOrder(world, tailor.id(), "minecraft:loom", 6L)
+                .orElseThrow(() -> new AssertionError("Tailor could not start carpet recipe at loom"));
+        helper.assertTrue(tailorOrder.recipeId().equals("weave_white_carpet"),
+                "Tailor selected an unexpected recipe");
+        world.advanceOneDay();
+        advanced.advanceToDay(world, factions, 7L);
+        helper.assertTrue(world.settlement(settlement.id()).orElseThrow().inventory()
+                        .getOrDefault("minecraft:white_carpet", 0L) == 3L,
+                "Completed tailor order did not create exactly three carpets");
         helper.succeed();
     }
 
