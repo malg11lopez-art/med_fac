@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""Static checks for MEDIEVAL FACTIONS resources. Does not replace an in-game test."""
+from pathlib import Path
+import json, re, sys, wave, subprocess
+from PIL import Image
+ROOT = Path(__file__).resolve().parents[1]
+ASSETS = ROOT / "src/main/resources/assets/medieval_factions"
+errors=[]; warnings=[]
+def read(p):
+    try: return json.loads(p.read_text(encoding="utf-8"))
+    except Exception as e: errors.append(f"JSON inválido {p.relative_to(ROOT)}: {e}"); return {}
+# all JSON resources parse
+json_files=list(ASSETS.rglob("*.json")) + list((ROOT/"src/main/resources/data").rglob("*.json"))
+for p in json_files: read(p)
+# geo bones and animation references
+geos={}
+for p in (ASSETS/"geo").rglob("*.geo.json"):
+    d=read(p); names=set()
+    for geometry in d.get("minecraft:geometry",[]):
+        names.update(b.get("name") for b in geometry.get("bones",[]) if b.get("name"))
+    geos[p.name.removesuffix(".geo.json")]=names
+mapping={"guard":"guard","guard_combat":"guard","guard_magic":"guard","guard_professions":"guard","horse":"horse","dragon":"dragon"}
+special={"centaur":"centaur","harpy":"harpy","merfolk":"merfolk","draconid":"draconid","wolf":"wolf","griffin":"griffin","phoenix":"phoenix"}
+for p in (ASSETS/"animations/entities").glob("*.animation.json"):
+    d=read(p)
+    if p.stem in mapping:
+        target=mapping[p.stem]
+        for aname, anim in d.get("animations",{}).items():
+            missing=set(anim.get("bones",{}))-geos.get(target,set())
+            if missing: errors.append(f"{aname}: huesos inexistentes en {target}: {sorted(missing)}")
+    if p.stem == "special_entities":
+        for aname, anim in d.get("animations",{}).items():
+            group=aname.split('.')[1]
+            target=special.get(group)
+            if target:
+                missing=set(anim.get("bones",{}))-geos.get(target,set())
+                if missing: errors.append(f"{aname}: huesos inexistentes en {target}: {sorted(missing)}")
+# block animation bone check
+block_map={'forge':'forge','arcane_workbench':'arcane_workbench','royal_banner':'royal_banner','windmill':'windmill'}
+for p in (ASSETS/"animations/blocks").glob("*.animation.json"):
+    d=read(p)
+    for aname, anim in d.get("animations",{}).items():
+        target=next((k for k in block_map if aname.startswith('animation.'+k+'.')),None)
+        if target:
+            missing=set(anim.get('bones',{}))-geos.get(target,set())
+            if missing: errors.append(f"{aname}: huesos inexistentes en {target}: {sorted(missing)}")
+# sound file refs and keyframe refs
+sounds=read(ASSETS/"sounds.json")
+for event, definition in sounds.items():
+    for item in definition.get('sounds',[]):
+        name=item if isinstance(item,str) else item.get('name','')
+        ns, path=(name.split(':',1) if ':' in name else ('minecraft',name))
+        if ns=='medieval_factions' and not (ASSETS/'sounds'/f'{path}.ogg').exists():
+            errors.append(f"Sonido {event}: falta {path}.ogg")
+for p in (ASSETS/"animations").rglob("*.animation.json"):
+    d=read(p)
+    for aname, anim in d.get('animations',{}).items():
+        for marker in anim.get('sound_effects',{}).values():
+            sid=marker.get('effect','').split('|')[0]
+            ns, path=(sid.split(':',1) if ':' in sid else ('minecraft',sid))
+            if ns=='medieval_factions' and path not in sounds:
+                errors.append(f"Keyframe {aname}: SoundEvent inexistente {sid}")
+# Minecraft 1.21+ singular data folder checks.
+for required_tag in [ROOT/"src/main/resources/data/minecraft/tags/block/mineable/pickaxe.json", ROOT/"src/main/resources/data/minecraft/tags/block/needs_iron_tool.json"]:
+    if not required_tag.exists():
+        errors.append(f"Falta tag 1.21.x: {required_tag.relative_to(ROOT)}")
+for recipe in (ROOT/"src/main/resources/data/medieval_factions/recipe").glob("*.json"):
+    read(recipe)
+
+# Java renderer resource references and sound registration parity.
+java_root = ROOT / "src/main/java"
+for source in java_root.rglob("*.java"):
+    text = source.read_text(encoding="utf-8")
+    # Model classes use namespace-relative paths in ResourceLocation.fromNamespaceAndPath.
+    if source.name.endswith("Model.java"):
+        for rel in re.findall(r'ResourceLocation\.fromNamespaceAndPath\(MedievalFactions\.MOD_ID, "([^"]+)"\)', text):
+            if rel.startswith("textures/"):
+                target = ASSETS / (rel if Path(rel).suffix else rel + ".png")
+            else:
+                target = ASSETS / rel
+            if not target.exists():
+                errors.append(f"Renderer {source.name}: falta recurso {rel}")
+registry = java_root / "com/medievalfactions/registry/MFSounds.java"
+if registry.exists():
+    registered = set(re.findall(r'SOUND_EVENTS\.register\("([a-z0-9_]+)"', registry.read_text(encoding="utf-8")))
+    for event in sounds:
+        if event not in registered:
+            errors.append(f"SoundEvent sin DeferredRegister: {event}")
+    for event in registered:
+        if event not in sounds:
+            errors.append(f"Deferred SoundEvent sin sounds.json: {event}")
+
+# textures decode
+for p in ASSETS.rglob('*.png'):
+    try:
+        with Image.open(p) as im:
+            im.verify()
+    except Exception as e: errors.append(f"PNG corrupto {p.relative_to(ROOT)}: {e}")
+# model texture references
+for p in (ASSETS/'models').rglob('*.json'):
+    d=read(p)
+    for val in d.get('textures',{}).values():
+        if ':' not in val: continue
+        ns,path=val.split(':',1)
+        if ns=='medieval_factions' and not (ASSETS/'textures'/f'{path}.png').exists():
+            errors.append(f"Modelo {p.name}: falta textura {val}")
+
+# Item/block model parent checks and all locale keys.
+for p in (ASSETS/"models").rglob("*.json"):
+    d=read(p)
+    parent=d.get("parent", "")
+    if parent.startswith("medieval_factions:"):
+        rel=parent.split(":",1)[1]
+        candidates=[ASSETS/"models"/(rel+".json")]
+        if not any(c.exists() for c in candidates):
+            warnings.append(f"Parent custom no encontrado (puede ser modelo vanilla): {p.relative_to(ROOT)} -> {parent}")
+# Check texture paths in geo models.
+for p in (ASSETS/"geo").rglob("*.geo.json"):
+    d=read(p)
+    for geometry in d.get("minecraft:geometry", []):
+        desc=geometry.get("description", {})
+        tw, th=desc.get("texture_width"), desc.get("texture_height")
+        if not isinstance(tw, int) or not isinstance(th, int):
+            errors.append(f"Geo sin dimensiones de textura válidas: {p.relative_to(ROOT)}")
+
+# Required translation keys for every registered item and block model.
+try:
+    es = read(ASSETS/"lang/es_es.json")
+    for model in (ASSETS/"models/item").glob("*.json"):
+        item = model.stem
+        if re.search(r"_pulling_[0-2]$", item):
+            continue  # Bow draw-state models are variants of hunter_bow, not independent items.
+        if f"item.medieval_factions.{item}" not in es and f"block.medieval_factions.{item}" not in es:
+            errors.append(f"Falta traducción es_es para modelo de objeto: {item}")
+    for state in (ASSETS/"blockstates").glob("*.json"):
+        block = state.stem
+        if f"block.medieval_factions.{block}" not in es:
+            errors.append(f"Falta traducción es_es para bloque: {block}")
+except Exception as ex:
+    errors.append(f"No se pudieron validar traducciones: {ex}")
+# Animation names hard-coded in Java controllers must exist in a GeckoLib animation file.
+known_animations=set()
+for p in (ASSETS/"animations").rglob("*.animation.json"):
+    d=read(p)
+    known_animations.update(d.get("animations",{}))
+for source in (ROOT/"src/main/java").rglob("*.java"):
+    code=source.read_text(encoding="utf-8")
+    for clip in set(re.findall(r'"(animation\.[a-z0-9_.]+)"', code)):
+        if clip not in known_animations:
+            errors.append(f"Controlador Java {source.name}: animación inexistente {clip}")
+
+# OGG metadata check if ffprobe exists
+try:
+    subprocess.run(['ffprobe','-version'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=True)
+    for p in (ASSETS/'sounds').rglob('*.ogg'):
+        q=subprocess.run(['ffprobe','-v','error','-show_entries','stream=codec_name,channels,sample_rate','-of','default=nw=1',str(p)],capture_output=True,text=True)
+        if q.returncode: errors.append(f"OGG ilegible: {p.relative_to(ROOT)}")
+        else:
+            info=q.stdout
+            if 'vorbis' not in info: errors.append(f"Codec no Vorbis: {p.relative_to(ROOT)}")
+            if 'channels=1' not in info: warnings.append(f"Audio no mono (puede no atenuarse): {p.relative_to(ROOT)}")
+except Exception:
+    warnings.append('ffprobe no instalado; metadatos OGG no comprobados')
+
+# Full registration/model parity: catch objects or blocks that have a texture/model but no runtime registration.
+registry_dir = java_root / "com/medievalfactions/registry"
+items_source = registry_dir / "MFItems.java"
+if items_source.exists():
+    item_code = items_source.read_text(encoding="utf-8")
+    registered_items = set(re.findall(r'REGISTRY\.put\("([a-z0-9_]+)"', item_code))
+    registered_items.update(re.findall(r'\bsword\("([a-z0-9_]+)"', item_code))
+    registered_items.update(re.findall(r'registerBlockItem\("([a-z0-9_]+)"', item_code))
+    materials_match = re.search(r'String\[\]\s+materials\s*=\s*\{([^}]*)\}', item_code, re.S)
+    if materials_match:
+        registered_items.update(re.findall(r'"([a-z0-9_]+)"', materials_match.group(1)))
+    item_models = {f.stem for f in (ASSETS / "models/item").glob("*.json")
+                   if not re.search(r'_pulling_[0-2]$', f.stem)}
+    for item in sorted(registered_items - item_models):
+        errors.append(f"Objeto registrado sin modelo de inventario: {item}")
+    for item in sorted(item_models - registered_items):
+        errors.append(f"Modelo de objeto huérfano sin registro (no es estado de arco): {item}")
+    if "crossbow_bolt" in registered_items:
+        arrow_tag = ROOT / "src/main/resources/data/minecraft/tags/item/arrows.json"
+        if not arrow_tag.exists():
+            errors.append("crossbow_bolt no está incluido en el tag minecraft:arrows")
+        else:
+            tag_data = read(arrow_tag)
+            if "medieval_factions:crossbow_bolt" not in tag_data.get("values", []):
+                errors.append("minecraft:arrows no contiene medieval_factions:crossbow_bolt")
+    bow_model = read(ASSETS / "models/item/hunter_bow.json")
+    for override in bow_model.get("overrides", []):
+        model_ref = override.get("model", "")
+        if model_ref.startswith("medieval_factions:"):
+            model_path = ASSETS / "models" / (model_ref.split(":", 1)[1] + ".json")
+            if not model_path.exists():
+                errors.append(f"Estado de arco sin modelo: {model_ref}")
+
+blocks_source = registry_dir / "MFBlocks.java"
+if blocks_source.exists():
+    registered_blocks = set(re.findall(r'BLOCKS\.register\("([a-z0-9_]+)"', blocks_source.read_text(encoding="utf-8")))
+    blockstates = {f.stem for f in (ASSETS / "blockstates").glob("*.json")}
+    for block in sorted(registered_blocks - blockstates):
+        errors.append(f"Bloque registrado sin blockstate: {block}")
+    for block in sorted(blockstates - registered_blocks):
+        errors.append(f"Blockstate huérfano sin DeferredBlock: {block}")
+
+# Every registered living entity must have a renderer; every renderer's model/texture/animation must exist.
+entities_source = registry_dir / "MFEntities.java"
+client_events = java_root / "com/medievalfactions/client/MFClientEvents.java"
+if entities_source.exists() and client_events.exists():
+    entity_code = entities_source.read_text(encoding="utf-8")
+    renderer_code = client_events.read_text(encoding="utf-8")
+    registered_entity_fields = set(re.findall(r'DeferredHolder<[^;]+?>\s+(\w+)\s*=\s*ENTITY_TYPES\.register\(', entity_code))
+    renderer_fields = set(re.findall(r'event\.registerEntityRenderer\(MFEntities\.(\w+)\.get\(\)', renderer_code))
+    for name in sorted(registered_entity_fields - renderer_fields):
+        errors.append(f"Entidad registrada sin renderer cliente: {name}")
+    for name in sorted(renderer_fields - registered_entity_fields):
+        errors.append(f"Renderer apunta a entidad sin registrar: {name}")
+
+# Skins are preserved as vanilla-compatible player skin sheets. Validate manifest entries and exact dimensions.
+import csv
+skin_manifest = ROOT / "skins_manifest.csv"
+if skin_manifest.exists():
+    try:
+        with skin_manifest.open(encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+        seen_skins = set()
+        for row in rows:
+            rel = row.get("texture", "")
+            if not rel or rel in seen_skins:
+                errors.append(f"Entrada de skin vacía o duplicada en skins_manifest.csv: {rel}")
+                continue
+            seen_skins.add(rel)
+            image_path = ASSETS / rel
+            if not image_path.exists():
+                errors.append(f"Skin declarada pero ausente: {rel}")
+                continue
+            try:
+                with Image.open(image_path) as image:
+                    if image.size != (64, 64):
+                        errors.append(f"Skin no compatible con formato 64x64: {rel} ({image.size})")
+                    if image.mode != "RGBA":
+                        errors.append(f"Skin no está en RGBA: {rel} ({image.mode})")
+            except Exception as exc:
+                errors.append(f"Skin ilegible {rel}: {exc}")
+        actual_skins = {p.relative_to(ASSETS).as_posix() for p in (ASSETS / "textures/player").glob("*.png")}
+        for rel in sorted(actual_skins - seen_skins):
+            errors.append(f"Skin PNG no inventariada: {rel}")
+        for rel in sorted(seen_skins - actual_skins):
+            errors.append(f"Skin inventariada no localizada: {rel}")
+        if rows:
+            warnings.append("Las skins 64x64 están validadas e inventariadas, pero aún no están aplicadas por un renderer/selector de skins del jugador.")
+    except Exception as exc:
+        errors.append(f"No se pudo leer skins_manifest.csv: {exc}")
+else:
+    errors.append("Falta skins_manifest.csv")
+
+# Validate the animation library actually loaded by each GeoModel, not only the existence of loose JSON clips.
+model_to_entity = {
+    "MFGuardModel.java": "MFGuardEntity.java", "MFResidentModel.java": "MFResidentEntity.java",
+    "MFDragonModel.java": "MFDragonEntity.java", "MFHorseModel.java": "MFHorseEntity.java",
+    "MFCentaurModel.java": "MFCentaurEntity.java", "MFHarpyModel.java": "MFHarpyEntity.java",
+    "MFMerfolkModel.java": "MFMerfolkEntity.java", "MFDraconidModel.java": "MFDraconidEntity.java",
+    "MFWolfModel.java": "MFWolfEntity.java", "MFGriffinModel.java": "MFGriffinEntity.java",
+    "MFPhoenixModel.java": "MFPhoenixEntity.java"
+}
+for model_name, entity_name in model_to_entity.items():
+    model_file = java_root / "com/medievalfactions/entity/model" / model_name
+    entity_file = java_root / "com/medievalfactions/entity" / entity_name
+    if not model_file.exists() or not entity_file.exists():
+        errors.append(f"Falta pareja entidad/modelo: {entity_name} / {model_name}")
+        continue
+    model_code = model_file.read_text(encoding="utf-8")
+    match = re.search(r'ResourceLocation\.fromNamespaceAndPath\(MedievalFactions\.MOD_ID,\s*"(animations/[^\"]+\.animation\.json)"\)', model_code)
+    if not match:
+        errors.append(f"Modelo sin ruta de animación declarada: {model_name}")
+        continue
+    animation_path = ASSETS / match.group(1)
+    if not animation_path.exists():
+        errors.append(f"Modelo {model_name} carga una biblioteca inexistente: {match.group(1)}")
+        continue
+    loaded_clips = set(read(animation_path).get("animations", {}))
+    entity_code = entity_file.read_text(encoding="utf-8")
+    for clip in set(re.findall(r'"(animation\.[a-z0-9_.]+)"', entity_code)):
+        if clip not in loaded_clips:
+            errors.append(f"Entidad {entity_name} intenta reproducir {clip}, ausente de la biblioteca cargada por {model_name}")
+
+# Guard and resident animation fragments must be merged into the exact runtime resource used by both models.
+guard_full = read(ASSETS / "animations/entities/guard_full.animation.json")
+guard_merged = guard_full.get("animations", {})
+for fragment in ["guard.animation.json", "guard_combat.animation.json", "guard_magic.animation.json", "guard_professions.animation.json"]:
+    fragment_data = read(ASSETS / "animations/entities" / fragment).get("animations", {})
+    for clip in fragment_data:
+        if clip not in guard_merged:
+            errors.append(f"Clip guard no está integrado en guard_full.animation.json: {clip}")
+for clip in ["animation.guard.resident_sleep", "animation.guard.resident_eat", "animation.guard.resident_socialize", "animation.guard.resident_train"]:
+    if clip not in guard_merged:
+        errors.append(f"Animación civil ausente: {clip}")
+
+print(f"JSON: {len(json_files)} | Geo rigs: {len(geos)} | SoundEvents: {len(sounds)} | OGG: {len(list((ASSETS/'sounds').rglob('*.ogg')))}")
+print(f"Errores: {len(errors)} | Advertencias: {len(warnings)}")
+for x in errors: print('ERROR:',x)
+for x in warnings: print('WARN:',x)
+sys.exit(1 if errors else 0)

@@ -1,0 +1,76 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+group = mod_group_id
+version = mod_version
+base { archivesName = mod_id }
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    mavenCentral()
+    maven { name = 'CurseMaven'; url = 'https://www.cursemaven.com' }
+}
+
+dependencies {
+    // GeckoLib 4 build for NeoForge + Minecraft 1.21.1 (not GeckoLib 5).
+    implementation 'curse.maven:geckolib-388172:9748637'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+}
+
+tasks.withType(Test).configureEach { useJUnitPlatform() }
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+
+neoForge {
+    version = neo_version
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        }
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        }
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        }
+        data {
+            data()
+            programArguments.addAll '--mod', mod_id, '--all', '--output', file('src/generated/resources/').absolutePath, '--existing', file('src/main/resources/').absolutePath
+        }
+        configureEach { logLevel = org.slf4j.event.Level.INFO }
+    }
+    mods {
+        medieval_factions { sourceSet sourceSets.main }
+    }
+}
+
+sourceSets.main.resources.srcDir 'src/generated/resources'
+
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var props = [
+        minecraft_version: minecraft_version,
+        minecraft_version_range: minecraft_version_range,
+        neo_version: neo_version,
+        loader_version_range: loader_version_range,
+        mod_id: mod_id,
+        mod_name: mod_name,
+        mod_license: mod_license,
+        mod_version: mod_version
+    ]
+    inputs.properties props
+    filesMatching(['META-INF/neoforge.mods.toml']) { expand props }
+    from 'src/main/templates'
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+sourceSets.main.resources.srcDir generateModMetadata
+
+publishing {
+    publications { register('mavenJava', MavenPublication) { from components.java } }
+}

@@ -1,0 +1,192 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.forge.embers": {
+      "animation_length": 1.0,
+      "loop": true,
+      "bones": {
+        "flame": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0.5,
+              0
+            ],
+            "1": [
+              0,
+              0,
+              0
+            ]
+          },
+          "scale": {
+            "0": [
+              0.9,
+              0.75,
+              0.9
+            ],
+            "0.3": [
+              1.05,
+              1.12,
+              1.05
+            ],
+            "0.65": [
+              0.85,
+              1.2,
+              0.9
+            ],
+            "1": [
+              0.9,
+              0.75,
+              0.9
+            ]
+          }
+        }
+      }
+    },
+    "animation.forge.bellows": {
+      "animation_length": 1.6,
+      "loop": true,
+      "bones": {
+        "bellows": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.8": [
+              0,
+              0,
+              -1
+            ],
+            "1.6": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.arcane_workbench.crystal_orbit": {
+      "animation_length": 3.0,
+      "loop": true,
+      "bones": {
+        "crystal": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "3": [
+              0,
+              360,
+              0
+            ]
+          },
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1.5": [
+              0,
+              1,
+              0
+            ],
+            "3": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "rune_ring": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "3": [
+              0,
+              -360,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.royal_banner.wave": {
+      "animation_length": 1.4,
+      "loop": true,
+      "bones": {
+        "cloth": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              -5
+            ],
+            "0.7": [
+              0,
+              0,
+              8
+            ],
+            "1.4": [
+              0,
+              0,
+              -5
+            ]
+          }
+        },
+        "cloth_tip": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.7": [
+              0,
+              0,
+              18
+            ],
+            "1.4": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.windmill.turn": {
+      "animation_length": 2.5,
+      "loop": true,
+      "bones": {
+        "rotor": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "2.5": [
+              0,
+              0,
+              360
+            ]
+          }
+        }
+      }
+    }
+  }
+}

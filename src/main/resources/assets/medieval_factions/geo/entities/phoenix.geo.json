@@ -1,0 +1,338 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.medieval_factions.phoenix",
+        "texture_width": 256,
+        "texture_height": 256,
+        "visible_bounds_width": 3.8,
+        "visible_bounds_height": 4.0,
+        "visible_bounds_offset": [
+          0,
+          1,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            10,
+            0
+          ],
+          "cubes": []
+        },
+        {
+          "name": "body",
+          "pivot": [
+            0,
+            12,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -4,
+                -4,
+                -4
+              ],
+              "size": [
+                8,
+                9,
+                8
+              ],
+              "uv": [
+                0,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "neck",
+          "pivot": [
+            0,
+            17,
+            -3
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                -3,
+                -3
+              ],
+              "size": [
+                4,
+                5,
+                4
+              ],
+              "uv": [
+                40,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "head",
+          "pivot": [
+            0,
+            20,
+            -5
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -3,
+                -2,
+                -3
+              ],
+              "size": [
+                6,
+                5,
+                6
+              ],
+              "uv": [
+                56,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "neck"
+        },
+        {
+          "name": "beak",
+          "pivot": [
+            0,
+            18,
+            -9
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                -1,
+                -2
+              ],
+              "size": [
+                2,
+                2,
+                3
+              ],
+              "uv": [
+                80,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "head"
+        },
+        {
+          "name": "left_wing",
+          "pivot": [
+            4,
+            15,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                0,
+                -1,
+                -2
+              ],
+              "size": [
+                11,
+                2,
+                12
+              ],
+              "uv": [
+                0,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "left_wing_tip",
+          "pivot": [
+            14,
+            14,
+            8
+          ],
+          "cubes": [
+            {
+              "origin": [
+                0,
+                0,
+                0
+              ],
+              "size": [
+                8,
+                1,
+                9
+              ],
+              "uv": [
+                32,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "left_wing"
+        },
+        {
+          "name": "right_wing",
+          "pivot": [
+            -4,
+            15,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -11,
+                -1,
+                -2
+              ],
+              "size": [
+                11,
+                2,
+                12
+              ],
+              "uv": [
+                64,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "right_wing_tip",
+          "pivot": [
+            -14,
+            14,
+            8
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -8,
+                0,
+                0
+              ],
+              "size": [
+                8,
+                1,
+                9
+              ],
+              "uv": [
+                96,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "right_wing"
+        },
+        {
+          "name": "tail_feathers",
+          "pivot": [
+            0,
+            10,
+            4
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -5,
+                -1,
+                0
+              ],
+              "size": [
+                10,
+                2,
+                10
+              ],
+              "uv": [
+                128,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "left_leg",
+          "pivot": [
+            2,
+            7,
+            2
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                -6,
+                -1
+              ],
+              "size": [
+                2,
+                7,
+                2
+              ],
+              "uv": [
+                160,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "right_leg",
+          "pivot": [
+            -2,
+            7,
+            2
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                -6,
+                -1
+              ],
+              "size": [
+                2,
+                7,
+                2
+              ],
+              "uv": [
+                176,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "root"
+        }
+      ]
+    }
+  ]
+}

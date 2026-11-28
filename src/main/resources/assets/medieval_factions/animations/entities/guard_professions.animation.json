@@ -1,0 +1,585 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.guard.mine": {
+      "animation_length": 0.82,
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.38": [
+              14,
+              0,
+              0
+            ],
+            "0.82": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -10,
+              0,
+              0
+            ],
+            "0.25": [
+              -120,
+              0,
+              0
+            ],
+            "0.4": [
+              -10,
+              0,
+              0
+            ],
+            "0.82": [
+              -10,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.4": {
+          "effect": "medieval_factions:profession_mining_pick"
+        }
+      }
+    },
+    "animation.guard.chop_wood": {
+      "animation_length": 0.9,
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.38": [
+              -8,
+              0,
+              0
+            ],
+            "0.9": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -20,
+              0,
+              0
+            ],
+            "0.32": [
+              -125,
+              0,
+              -10
+            ],
+            "0.47": [
+              15,
+              0,
+              5
+            ],
+            "0.9": [
+              -20,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.47": {
+          "effect": "medieval_factions:profession_saw_wood"
+        }
+      }
+    },
+    "animation.guard.saw": {
+      "animation_length": 1.0,
+      "loop": true,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -30,
+              0,
+              0
+            ],
+            "0.25": [
+              -50,
+              0,
+              0
+            ],
+            "0.5": [
+              -30,
+              0,
+              0
+            ],
+            "0.75": [
+              -50,
+              0,
+              0
+            ],
+            "1": [
+              -30,
+              0,
+              0
+            ]
+          }
+        },
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              2,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.25": {
+          "effect": "medieval_factions:profession_saw_wood"
+        }
+      }
+    },
+    "animation.guard.fish_cast": {
+      "animation_length": 1.05,
+      "loop": false,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.4": [
+              -120,
+              0,
+              -25
+            ],
+            "0.75": [
+              15,
+              0,
+              20
+            ],
+            "1.05": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.guard.write": {
+      "animation_length": 1.6,
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": {
+            "0": [
+              15,
+              0,
+              0
+            ],
+            "0.8": [
+              18,
+              0,
+              0
+            ],
+            "1.6": [
+              15,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -25,
+              0,
+              0
+            ],
+            "0.4": [
+              -32,
+              0,
+              5
+            ],
+            "0.8": [
+              -25,
+              0,
+              0
+            ],
+            "1.2": [
+              -32,
+              0,
+              5
+            ],
+            "1.6": [
+              -25,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.6": {
+          "effect": "medieval_factions:profession_book_pages"
+        }
+      }
+    },
+    "animation.guard.alchemy": {
+      "animation_length": 1.4,
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.7": [
+              4,
+              0,
+              0
+            ],
+            "1.4": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -20,
+              0,
+              -12
+            ],
+            "0.35": [
+              -55,
+              0,
+              -35
+            ],
+            "0.7": [
+              -20,
+              0,
+              -12
+            ],
+            "1.05": [
+              -55,
+              0,
+              -35
+            ],
+            "1.4": [
+              -20,
+              0,
+              -12
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.72": {
+          "effect": "medieval_factions:profession_alchemy_bubble"
+        }
+      }
+    },
+    "animation.guard.cook": {
+      "animation_length": 1.2,
+      "loop": true,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -20,
+              0,
+              0
+            ],
+            "0.3": [
+              -45,
+              0,
+              15
+            ],
+            "0.6": [
+              -20,
+              0,
+              0
+            ],
+            "0.9": [
+              -45,
+              0,
+              -15
+            ],
+            "1.2": [
+              -20,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.6": {
+          "effect": "medieval_factions:profession_cooking_sizzle"
+        }
+      }
+    },
+    "animation.guard.build": {
+      "animation_length": 0.9,
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.42": [
+              8,
+              0,
+              0
+            ],
+            "0.9": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -5,
+              0,
+              0
+            ],
+            "0.3": [
+              -110,
+              0,
+              0
+            ],
+            "0.45": [
+              -5,
+              0,
+              0
+            ],
+            "0.9": [
+              -5,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.45": {
+          "effect": "medieval_factions:profession_construction_hammer"
+        }
+      }
+    },
+    "animation.guard.carry": {
+      "animation_length": 0.8,
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.4": [
+              2,
+              0,
+              0
+            ],
+            "0.8": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -45,
+              0,
+              -8
+            ],
+            "0.8": [
+              -45,
+              0,
+              -8
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              -45,
+              0,
+              8
+            ],
+            "0.8": [
+              -45,
+              0,
+              8
+            ]
+          }
+        }
+      }
+    },
+    "animation.guard.harvest": {
+      "animation_length": 0.9,
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.36": [
+              14,
+              0,
+              0
+            ],
+            "0.9": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -15,
+              0,
+              0
+            ],
+            "0.3": [
+              -70,
+              0,
+              -35
+            ],
+            "0.48": [
+              10,
+              0,
+              25
+            ],
+            "0.9": [
+              -15,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.guard.craft": {
+      "animation_length": 1.05,
+      "loop": true,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -25,
+              0,
+              0
+            ],
+            "0.28": [
+              -65,
+              0,
+              0
+            ],
+            "0.52": [
+              -25,
+              0,
+              0
+            ],
+            "0.8": [
+              -65,
+              0,
+              0
+            ],
+            "1.05": [
+              -25,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              -25,
+              0,
+              0
+            ],
+            "0.28": [
+              -65,
+              0,
+              0
+            ],
+            "0.52": [
+              -25,
+              0,
+              0
+            ],
+            "0.8": [
+              -65,
+              0,
+              0
+            ],
+            "1.05": [
+              -25,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.52": {
+          "effect": "medieval_factions:profession_anvil_strike"
+        }
+      }
+    }
+  }
+}

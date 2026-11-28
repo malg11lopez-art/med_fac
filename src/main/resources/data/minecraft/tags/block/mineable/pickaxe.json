@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "medieval_factions:sunsteel_ore",
+    "medieval_factions:deepslate_sunsteel_ore",
+    "medieval_factions:blacksmith_anvil",
+    "medieval_factions:forge_controller"
+  ]
+}

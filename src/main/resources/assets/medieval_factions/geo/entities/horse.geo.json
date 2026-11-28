@@ -1,0 +1,254 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.medieval_factions.horse",
+        "texture_width": 128,
+        "texture_height": 128,
+        "visible_bounds_width": 3,
+        "visible_bounds_height": 3,
+        "visible_bounds_offset": [
+          0,
+          1.0,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            8,
+            0
+          ],
+          "cubes": []
+        },
+        {
+          "name": "body",
+          "pivot": [
+            0,
+            9,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -6,
+                -4,
+                -3
+              ],
+              "size": [
+                12,
+                8,
+                6
+              ],
+              "uv": [
+                0,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "neck",
+          "pivot": [
+            0,
+            12,
+            -2
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                -5,
+                -2
+              ],
+              "size": [
+                4,
+                8,
+                4
+              ],
+              "uv": [
+                36,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "head",
+          "pivot": [
+            0,
+            7,
+            -2
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                -4,
+                -2
+              ],
+              "size": [
+                4,
+                5,
+                4
+              ],
+              "uv": [
+                52,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "neck"
+        },
+        {
+          "name": "tail",
+          "pivot": [
+            0,
+            12,
+            5
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                0,
+                0
+              ],
+              "size": [
+                2,
+                8,
+                2
+              ],
+              "uv": [
+                72,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "front_left_leg",
+          "pivot": [
+            4,
+            8,
+            -2
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                -8,
+                -1
+              ],
+              "size": [
+                2,
+                9,
+                2
+              ],
+              "uv": [
+                0,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "front_right_leg",
+          "pivot": [
+            -4,
+            8,
+            -2
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                -8,
+                -1
+              ],
+              "size": [
+                2,
+                9,
+                2
+              ],
+              "uv": [
+                16,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "back_left_leg",
+          "pivot": [
+            4,
+            8,
+            3
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                -8,
+                -1
+              ],
+              "size": [
+                2,
+                9,
+                2
+              ],
+              "uv": [
+                32,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        },
+        {
+          "name": "back_right_leg",
+          "pivot": [
+            -4,
+            8,
+            3
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -1,
+                -8,
+                -1
+              ],
+              "size": [
+                2,
+                9,
+                2
+              ],
+              "uv": [
+                48,
+                32
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "body"
+        }
+      ]
+    }
+  ]
+}

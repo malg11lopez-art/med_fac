@@ -1,0 +1,1579 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.guard.slash_combo": {
+      "animation_length": 0.9,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.22": [
+              0,
+              -18,
+              0
+            ],
+            "0.48": [
+              0,
+              22,
+              0
+            ],
+            "0.68": [
+              0,
+              -20,
+              0
+            ],
+            "0.9": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.22": [
+              -100,
+              0,
+              -15
+            ],
+            "0.48": [
+              35,
+              0,
+              22
+            ],
+            "0.68": [
+              -95,
+              0,
+              -20
+            ],
+            "0.9": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.24": {
+          "effect": "medieval_factions:combat_sword_swing_light"
+        },
+        "0.7": {
+          "effect": "medieval_factions:combat_sword_swing_light"
+        }
+      }
+    },
+    "animation.guard.thrust": {
+      "animation_length": 0.58,
+      "loop": false,
+      "bones": {
+        "body": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.25": [
+              0,
+              0,
+              -1
+            ],
+            "0.58": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -20,
+              0,
+              0
+            ],
+            "0.25": [
+              -85,
+              0,
+              0
+            ],
+            "0.4": [
+              -85,
+              0,
+              0
+            ],
+            "0.58": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.28": {
+          "effect": "medieval_factions:combat_sword_swing_light"
+        }
+      }
+    },
+    "animation.guard.parry": {
+      "animation_length": 0.46,
+      "loop": false,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.18": [
+              -75,
+              0,
+              -35
+            ],
+            "0.3": [
+              -55,
+              0,
+              -25
+            ],
+            "0.46": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.18": [
+              0,
+              -10,
+              0
+            ],
+            "0.46": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.guard.dodge_roll": {
+      "animation_length": 0.72,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.2": [
+              65,
+              0,
+              0
+            ],
+            "0.46": [
+              85,
+              0,
+              85
+            ],
+            "0.72": [
+              0,
+              0,
+              0
+            ]
+          },
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.3": [
+              0,
+              -3,
+              0
+            ],
+            "0.52": [
+              0,
+              -2,
+              0
+            ],
+            "0.72": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_leg": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.3": [
+              65,
+              0,
+              0
+            ],
+            "0.72": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_leg": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.3": [
+              65,
+              0,
+              0
+            ],
+            "0.72": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "animation.guard.shield_bash": {
+      "animation_length": 0.54,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.2": [
+              -12,
+              0,
+              0
+            ],
+            "0.36": [
+              20,
+              0,
+              0
+            ],
+            "0.54": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.2": [
+              -70,
+              0,
+              10
+            ],
+            "0.36": [
+              -10,
+              0,
+              10
+            ],
+            "0.54": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.31": {
+          "effect": "medieval_factions:combat_shield_block"
+        }
+      }
+    },
+    "animation.guard.bow_draw": {
+      "animation_length": 0.7,
+      "loop": false,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.35": [
+              -75,
+              0,
+              -12
+            ],
+            "0.7": [
+              -75,
+              0,
+              -12
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.35": [
+              -75,
+              0,
+              12
+            ],
+            "0.7": [
+              -75,
+              0,
+              12
+            ]
+          }
+        },
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.35": [
+              0,
+              10,
+              0
+            ],
+            "0.7": [
+              0,
+              10,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.12": {
+          "effect": "medieval_factions:combat_bow_draw"
+        }
+      }
+    },
+    "animation.guard.bow_release": {
+      "animation_length": 0.32,
+      "loop": false,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -75,
+              0,
+              -12
+            ],
+            "0.12": [
+              -45,
+              0,
+              -12
+            ],
+            "0.32": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              -75,
+              0,
+              12
+            ],
+            "0.12": [
+              -45,
+              0,
+              12
+            ],
+            "0.32": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.1": {
+          "effect": "medieval_factions:combat_arrow_release"
+        }
+      }
+    },
+    "animation.guard.crossbow_reload": {
+      "animation_length": 1.1,
+      "loop": false,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.3": [
+              -90,
+              0,
+              -12
+            ],
+            "0.72": [
+              -45,
+              0,
+              -18
+            ],
+            "1.1": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.3": [
+              -55,
+              0,
+              12
+            ],
+            "0.72": [
+              -80,
+              0,
+              12
+            ],
+            "1.1": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.2": {
+          "effect": "medieval_factions:combat_crossbow_load"
+        }
+      }
+    },
+    "animation.guard.staff_strike": {
+      "animation_length": 0.72,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.24": [
+              0,
+              -16,
+              0
+            ],
+            "0.48": [
+              0,
+              18,
+              0
+            ],
+            "0.72": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.24": [
+              -100,
+              0,
+              -8
+            ],
+            "0.48": [
+              35,
+              0,
+              8
+            ],
+            "0.72": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.33": {
+          "effect": "medieval_factions:combat_sword_swing_heavy"
+        }
+      }
+    },
+    "animation.guard.greatsword_spin": {
+      "animation_length": 1.05,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.28": [
+              0,
+              -80,
+              0
+            ],
+            "0.7": [
+              0,
+              300,
+              0
+            ],
+            "1.05": [
+              0,
+              360,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.28": [
+              -125,
+              0,
+              -20
+            ],
+            "0.7": [
+              55,
+              0,
+              20
+            ],
+            "1.05": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.28": [
+              -100,
+              0,
+              20
+            ],
+            "0.7": [
+              45,
+              0,
+              -20
+            ],
+            "1.05": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.32": {
+          "effect": "medieval_factions:combat_sword_swing_heavy|0.9|0.9"
+        }
+      }
+    },
+    "animation.guard.spear_thrust": {
+      "animation_length": 0.62,
+      "loop": false,
+      "bones": {
+        "body": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.22": [
+              0,
+              0,
+              -1.2
+            ],
+            "0.62": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.22": [
+              -95,
+              0,
+              0
+            ],
+            "0.42": [
+              -90,
+              0,
+              0
+            ],
+            "0.62": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.22": [
+              -40,
+              0,
+              0
+            ],
+            "0.42": [
+              -45,
+              0,
+              0
+            ],
+            "0.62": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.24": {
+          "effect": "medieval_factions:combat_sword_swing_light"
+        }
+      }
+    },
+    "animation.guard.dagger_combo": {
+      "animation_length": 0.82,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.2": [
+              0,
+              -20,
+              0
+            ],
+            "0.4": [
+              0,
+              24,
+              0
+            ],
+            "0.62": [
+              0,
+              -18,
+              0
+            ],
+            "0.82": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.2": [
+              -75,
+              0,
+              -30
+            ],
+            "0.4": [
+              22,
+              0,
+              25
+            ],
+            "0.62": [
+              -75,
+              0,
+              -25
+            ],
+            "0.82": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.2": [
+              -30,
+              0,
+              28
+            ],
+            "0.4": [
+              20,
+              0,
+              -28
+            ],
+            "0.62": [
+              -30,
+              0,
+              25
+            ],
+            "0.82": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.22": {
+          "effect": "medieval_factions:combat_sword_swing_light"
+        },
+        "0.64": {
+          "effect": "medieval_factions:combat_sword_swing_light"
+        }
+      }
+    },
+    "animation.guard.axe_overhead": {
+      "animation_length": 0.88,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.32": [
+              -10,
+              0,
+              0
+            ],
+            "0.58": [
+              24,
+              0,
+              0
+            ],
+            "0.88": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.32": [
+              -135,
+              0,
+              -10
+            ],
+            "0.58": [
+              35,
+              0,
+              15
+            ],
+            "0.88": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.44": {
+          "effect": "medieval_factions:combat_sword_swing_heavy"
+        }
+      }
+    },
+    "animation.guard.hammer_slam": {
+      "animation_length": 1.0,
+      "loop": false,
+      "bones": {
+        "body": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              -1,
+              0
+            ],
+            "0.72": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.45": [
+              -145,
+              0,
+              0
+            ],
+            "0.7": [
+              50,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.45": [
+              -90,
+              0,
+              0
+            ],
+            "0.7": [
+              35,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.62": {
+          "effect": "medieval_factions:combat_sword_swing_heavy"
+        }
+      }
+    },
+    "animation.guard.shield_counter": {
+      "animation_length": 0.7,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.18": [
+              0,
+              -8,
+              0
+            ],
+            "0.4": [
+              0,
+              16,
+              0
+            ],
+            "0.7": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              -40,
+              0,
+              25
+            ],
+            "0.18": [
+              -65,
+              0,
+              25
+            ],
+            "0.4": [
+              -10,
+              0,
+              25
+            ],
+            "0.7": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.4": [
+              -70,
+              0,
+              -10
+            ],
+            "0.7": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.34": {
+          "effect": "medieval_factions:combat_shield_block"
+        }
+      }
+    },
+    "animation.guard.jump_attack": {
+      "animation_length": 0.82,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.32": [
+              -18,
+              0,
+              0
+            ],
+            "0.62": [
+              28,
+              0,
+              0
+            ],
+            "0.82": [
+              0,
+              0,
+              0
+            ]
+          },
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.32": [
+              0,
+              3,
+              0
+            ],
+            "0.62": [
+              0,
+              -1,
+              0
+            ],
+            "0.82": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.3": [
+              -100,
+              0,
+              -15
+            ],
+            "0.62": [
+              40,
+              0,
+              10
+            ],
+            "0.82": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.3": [
+              -40,
+              0,
+              15
+            ],
+            "0.62": [
+              20,
+              0,
+              -10
+            ],
+            "0.82": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.12": {
+          "effect": "medieval_factions:combat_jump"
+        },
+        "0.6": {
+          "effect": "medieval_factions:combat_land"
+        }
+      }
+    },
+    "animation.guard.heal_channel": {
+      "animation_length": 1.8,
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.9": [
+              0,
+              2,
+              0
+            ],
+            "1.8": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -95,
+              0,
+              -18
+            ],
+            "0.9": [
+              -112,
+              0,
+              -24
+            ],
+            "1.8": [
+              -95,
+              0,
+              -18
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              -95,
+              0,
+              18
+            ],
+            "0.9": [
+              -112,
+              0,
+              24
+            ],
+            "1.8": [
+              -95,
+              0,
+              18
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.1": {
+          "effect": "medieval_factions:magic_holy_burst|0.7|1.0"
+        }
+      }
+    },
+    "animation.guard.summon_channel": {
+      "animation_length": 1.65,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.55": [
+              6,
+              0,
+              0
+            ],
+            "1.65": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.55": [
+              -120,
+              0,
+              -25
+            ],
+            "1.1": [
+              -120,
+              0,
+              -25
+            ],
+            "1.65": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.55": [
+              -120,
+              0,
+              25
+            ],
+            "1.1": [
+              -120,
+              0,
+              25
+            ],
+            "1.65": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.15": {
+          "effect": "medieval_factions:magic_arcane_charge"
+        },
+        "1.25": {
+          "effect": "medieval_factions:magic_arcane_release"
+        }
+      }
+    },
+    "animation.guard.bard_performance": {
+      "animation_length": 2.0,
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              3,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -55,
+              0,
+              -15
+            ],
+            "1": [
+              -65,
+              0,
+              -18
+            ],
+            "2": [
+              -55,
+              0,
+              -15
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              -45,
+              0,
+              15
+            ],
+            "1": [
+              -55,
+              0,
+              18
+            ],
+            "2": [
+              -45,
+              0,
+              15
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.2": {
+          "effect": "medieval_factions:magic_spirit_call|0.45|1.0"
+        }
+      }
+    },
+    "animation.guard.monk_combo": {
+      "animation_length": 0.74,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.18": [
+              0,
+              -14,
+              0
+            ],
+            "0.38": [
+              0,
+              18,
+              0
+            ],
+            "0.56": [
+              0,
+              -12,
+              0
+            ],
+            "0.74": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.18": [
+              -40,
+              0,
+              -35
+            ],
+            "0.38": [
+              35,
+              0,
+              25
+            ],
+            "0.56": [
+              -25,
+              0,
+              -25
+            ],
+            "0.74": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.18": [
+              -25,
+              0,
+              25
+            ],
+            "0.38": [
+              -35,
+              0,
+              -20
+            ],
+            "0.56": [
+              35,
+              0,
+              20
+            ],
+            "0.74": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.21": {
+          "effect": "medieval_factions:combat_sword_swing_light"
+        },
+        "0.4": {
+          "effect": "medieval_factions:combat_sword_swing_light"
+        }
+      }
+    },
+    "animation.guard.berserker_roar": {
+      "animation_length": 1.15,
+      "loop": false,
+      "bones": {
+        "body": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.35": [
+              -18,
+              0,
+              0
+            ],
+            "0.8": [
+              22,
+              0,
+              0
+            ],
+            "1.15": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "head": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.35": [
+              -20,
+              0,
+              0
+            ],
+            "0.8": [
+              12,
+              0,
+              0
+            ],
+            "1.15": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.35": [
+              -110,
+              0,
+              -25
+            ],
+            "0.8": [
+              25,
+              0,
+              -25
+            ],
+            "1.15": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.35": [
+              -110,
+              0,
+              25
+            ],
+            "0.8": [
+              25,
+              0,
+              25
+            ],
+            "1.15": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "sound_effects": {
+        "0.5": {
+          "effect": "medieval_factions:creature_dragon_roar|0.5|0.9"
+        }
+      }
+    }
+  }
+}

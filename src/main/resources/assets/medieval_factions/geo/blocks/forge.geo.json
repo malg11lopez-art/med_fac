@@ -1,0 +1,142 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.medieval_factions.forge",
+        "texture_width": 128,
+        "texture_height": 128,
+        "visible_bounds_width": 2.5,
+        "visible_bounds_height": 3.5,
+        "visible_bounds_offset": [
+          0,
+          1,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "cubes": []
+        },
+        {
+          "name": "base",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -8,
+                0,
+                -8
+              ],
+              "size": [
+                16,
+                8,
+                16
+              ],
+              "uv": [
+                0,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "fire_box",
+          "pivot": [
+            0,
+            8,
+            -4
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -5,
+                0,
+                -3
+              ],
+              "size": [
+                10,
+                7,
+                6
+              ],
+              "uv": [
+                40,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "base"
+        },
+        {
+          "name": "flame",
+          "pivot": [
+            0,
+            15,
+            -4
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -3,
+                0,
+                -1
+              ],
+              "size": [
+                6,
+                5,
+                2
+              ],
+              "uv": [
+                64,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "fire_box"
+        },
+        {
+          "name": "bellows",
+          "pivot": [
+            0,
+            7,
+            7
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -5,
+                -1,
+                0
+              ],
+              "size": [
+                10,
+                3,
+                4
+              ],
+              "uv": [
+                80,
+                0
+              ],
+              "inflate": 0
+            }
+          ],
+          "parent": "base"
+        }
+      ]
+    }
+  ]
+}

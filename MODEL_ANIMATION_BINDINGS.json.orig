@@ -1,0 +1,47 @@
+{
+  "guard": [
+    "guard",
+    "guard_combat",
+    "guard_magic",
+    "guard_professions"
+  ],
+  "horse": [
+    "horse"
+  ],
+  "dragon": [
+    "dragon"
+  ],
+  "centaur": [
+    "special_entities"
+  ],
+  "harpy": [
+    "special_entities"
+  ],
+  "merfolk": [
+    "special_entities"
+  ],
+  "draconid": [
+    "special_entities"
+  ],
+  "wolf": [
+    "special_entities"
+  ],
+  "griffin": [
+    "special_entities"
+  ],
+  "phoenix": [
+    "special_entities"
+  ],
+  "forge": [
+    "medieval_blocks"
+  ],
+  "arcane_workbench": [
+    "medieval_blocks"
+  ],
+  "royal_banner": [
+    "medieval_blocks"
+  ],
+  "windmill": [
+    "medieval_blocks"
+  ]
+}
