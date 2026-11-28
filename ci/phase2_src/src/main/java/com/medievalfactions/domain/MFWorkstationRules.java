@@ -24,6 +24,10 @@ public final class MFWorkstationRules {
             Map.entry("weave_white_carpet", Set.of("minecraft:crafting_table", "minecraft:loom")),
             Map.entry("craft_redstone_repeater", Set.of("minecraft:crafting_table")),
             Map.entry("craft_observer", Set.of("minecraft:crafting_table")),
+            Map.entry("craft_bow", Set.of("minecraft:crafting_table")),
+            Map.entry("craft_minecart", Set.of("minecraft:crafting_table")),
+            Map.entry("craft_oak_boat", Set.of("minecraft:crafting_table")),
+            Map.entry("craft_clock", Set.of("minecraft:crafting_table")),
             Map.entry("brew_healing_tonic", Set.of("minecraft:brewing_stand", "medieval_factions:arcane_workbench")),
             Map.entry("brew_fire_resistance_tonic", Set.of("minecraft:brewing_stand", "medieval_factions:arcane_workbench"))
     );
